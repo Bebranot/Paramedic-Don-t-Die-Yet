@@ -135,8 +135,27 @@ export const Cover: React.FC<Props> = ({ shout }) => {
       />
 
       {/* раненый у ног */}
-      <div style={{ position: "absolute", left: 620, top: 585, width: 300, height: 100, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(120,8,8,0.9) 0%, rgba(90,6,6,0.6) 55%, rgba(0,0,0,0) 72%)" }} />
-      <Img src={staticFile("wounded.png")} style={{ position: "absolute", left: 620, top: 488, width: 340, filter: "drop-shadow(0 6px 8px rgba(0,0,0,0.5))" }} />
+      <svg width="360" height="170" viewBox="0 0 360 170" style={{ position: "absolute", left: 650, top: 540 }}>
+        {/* лужа крови под раненым */}
+        <path
+          d="M40 92 C20 60 70 34 120 40 C160 22 220 30 250 46 C300 38 345 62 330 96 C350 122 300 146 250 136 C215 158 160 150 130 138 C90 152 30 134 40 112 C20 104 26 96 40 92 Z"
+          fill="#2a0202"
+          stroke="#120000"
+          strokeWidth="5"
+        />
+        <path
+          d="M70 92 C60 70 100 56 140 60 C175 46 220 54 245 66 C285 62 310 80 300 100 C312 118 278 130 245 124 C215 138 170 134 145 126 C110 136 64 124 70 106 Z"
+          fill="#6e0a0a"
+        />
+        <ellipse cx="200" cy="74" rx="50" ry="8" fill="rgba(255,170,170,0.45)" />
+        <ellipse cx="120" cy="82" rx="20" ry="4" fill="rgba(255,180,180,0.35)" />
+        {/* брызги */}
+        <circle cx="18" cy="70" r="7" fill="#2a0202" stroke="#120000" strokeWidth="2" />
+        <circle cx="342" cy="138" r="6" fill="#2a0202" stroke="#120000" strokeWidth="2" />
+        <circle cx="300" cy="22" r="5" fill="#2a0202" stroke="#120000" strokeWidth="2" />
+        <circle cx="60" cy="150" r="4" fill="#2a0202" stroke="#120000" strokeWidth="2" />
+      </svg>
+      <Img src={staticFile("wounded.png")} style={{ position: "absolute", left: 600, top: 470, width: 380, filter: "drop-shadow(0 6px 8px rgba(0,0,0,0.5))" }} />
 
       {/* медик */}
       <Img

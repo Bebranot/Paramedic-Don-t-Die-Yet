@@ -222,11 +222,32 @@ def export_assets(out_dir):
     custom = {"Beret": plain(gen_textures.make_beret, "south"), "Belt": plain(gen_textures.make_belt, "Male", "south")}
     pawn("south", 1024, ["Shirt", "Vest", "Belt"], hat="Beret", goggles=True, body="Male", custom=custom).save(
         os.path.join(out_dir, "medic.png"))
-    w = pawn("south", 640, [], body="Male", shirt_color=(70, 110, 170))
+    S = 640
+    w = pawn("south", S, [], body="Male", shirt_color=(70, 110, 170))
+    by, hy = int(S * 0.45), int(S * 0.45) - int(S * 0.27)
+    # кровь на рубашке: пятна только поверх одежды/тела
+    body_mask = w.split()[3].point(lambda v: 255 if v > 200 else 0)
+    stains = Image.new("RGBA", w.size, (0, 0, 0, 0))
+    ds = ImageDraw.Draw(stains)
+    random.seed(5)
+    for cx, cy, r in ((0.56, 1.04, 0.08), (0.45, 1.13, 0.05), (0.61, 1.19, 0.045), (0.41, 0.99, 0.03)):
+        x, y, rr = cx * S, cy * S * 1.0 + 0, r * S
+        for _ in range(9):
+            ox, oy = random.uniform(-rr * 0.7, rr * 0.7), random.uniform(-rr * 0.7, rr * 0.7)
+            k = random.uniform(0.45, 0.9) * rr
+            ds.ellipse([x + ox - k, y + oy - k, x + ox + k, y + oy + k], fill=(120, 14, 14, 235))
+    stains = stains.filter(ImageFilter.GaussianBlur(1.5))
+    alpha = Image.eval(stains.split()[3], lambda v: v)
+    from PIL import ImageChops
+    stains.putalpha(ImageChops.darker(alpha, body_mask))
+    w.alpha_composite(stains)
+    # закрытые глаза: закрашиваем зрачки кожей и рисуем веки
     d = ImageDraw.Draw(w)
-    cx, top = w.width // 2, int(640 * 0.45)
-    d.rounded_rectangle([cx - 150, top + 250, cx + 150, top + 300], radius=14, fill=(*WHITE, 255), outline=(*OUTLINE, 255), width=8)
-    d.ellipse([cx - 22, top + 258, cx + 22, top + 292], fill=(170, 30, 30, 255))
+    for ex in (0.425, 0.565):
+        x, y = ex * S, hy + 0.548 * S
+        r = 0.032 * S
+        d.ellipse([x - r, y - r, x + r, y + r], fill=(*SKIN, 255))
+        d.arc([x - r, y - r * 1.2, x + r, y + r * 0.6], start=20, end=160, fill=(*OUTLINE, 255), width=7)
     w.rotate(90, expand=True, resample=Image.BICUBIC).save(os.path.join(out_dir, "wounded.png"))
     print("assets ->", out_dir)
 
