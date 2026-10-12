@@ -12,6 +12,7 @@ import sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gen_textures  # noqa: E402
 from gen_textures import (OUTLINE, RED, RED_DARK, REFLECT, ROOT, VAN, WHITE, cross_patch)  # noqa: E402
 
 APP = os.path.join(ROOT, "Textures", "Things", "Paramedic", "Apparel")
@@ -42,22 +43,35 @@ def tex(path, size):
     return Image.open(path).convert("RGBA").resize((size, size), Image.LANCZOS)
 
 
-def pawn(d, size, outfit, hat=None, goggles=False, body="Male", shirt_color=None):
+def plain(maker, *args):
+    """Вещь без нашивок (для обложки: на медике один знак — на груди)."""
+    saved = gen_textures.cross_patch
+    gen_textures.cross_patch = lambda *a, **k: None
+    try:
+        return maker(*args)
+    finally:
+        gen_textures.cross_patch = saved
+
+
+def pawn(d, size, outfit, hat=None, goggles=False, body="Male", shirt_color=None, custom=None):
     """Пешка из слоёв: тело, одежда, голова, шапка. Голова выше тела на ~0.34 размера тела."""
     canvas = Image.new("RGBA", (size, int(size * 1.45)), (0, 0, 0, 0))
     by = int(size * 0.45)
     canvas.alpha_composite(tinted(os.path.join(VAN, f"Naked_{body}_{d}.png"), SKIN, size), (0, by))
     if shirt_color:
         canvas.alpha_composite(tinted(os.path.join(VAN, f"ShirtBasic_{body}_{d}.png"), shirt_color, size), (0, by))
+    custom = custom or {}
     for item in outfit:
-        canvas.alpha_composite(tex(os.path.join(APP, item, f"PM_{item}_{body}_{d}.png"), size), (0, by))
+        im = custom.get(item) or Image.open(os.path.join(APP, item, f"PM_{item}_{body}_{d}.png")).convert("RGBA")
+        canvas.alpha_composite(im.resize((size, size), Image.LANCZOS), (0, by))
     hx = int(size * 0.05) if d == "east" else 0
     hy = by - int(size * 0.27)
     canvas.alpha_composite(tinted(os.path.join(VAN, f"Male_Average_Normal_{d}.png"), SKIN, size), (hx, hy))
     if goggles:
         canvas.alpha_composite(tex(os.path.join(APP, "Goggles", f"PM_Goggles_{d}.png"), size), (hx, hy))
     if hat:
-        canvas.alpha_composite(tex(os.path.join(APP, hat, f"PM_{hat}_{d}.png"), size), (hx, hy))
+        im = custom.get(hat) or Image.open(os.path.join(APP, hat, f"PM_{hat}_{d}.png")).convert("RGBA")
+        canvas.alpha_composite(im.resize((size, size), Image.LANCZOS), (hx, hy))
     return canvas
 
 
@@ -86,27 +100,44 @@ def background():
     return bg.convert("RGBA")
 
 
-def tracers(im, seed=3):
+def tracers(im, seed=11):
+    """Трассеры: светящаяся голова пули и затухающий хвост; вспышки выстрелов из-за мешков справа."""
     random.seed(seed)
-    layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    for _ in range(7):
-        y0 = random.randint(120, 640)
-        x0 = W + 20
-        x1 = random.randint(520, 980)
-        y1 = y0 + random.randint(-40, 40)
-        d.line([(x0, y0), (x1, y1)], fill=(255, 210, 90, 70), width=9)
-        d.line([(x0, y0), (x1, y1)], fill=(255, 236, 150, 230), width=3)
-    layer = layer.filter(ImageFilter.GaussianBlur(0.8))
-    im.alpha_composite(layer)
-    # искры попаданий в землю
-    d = ImageDraw.Draw(im)
-    for _ in range(5):
-        x, y = random.randint(560, 1000), random.randint(560, 690)
-        for a in range(6):
-            ang = random.uniform(-math.pi, 0)
-            d.line([(x, y), (x + 18 * math.cos(ang), y + 18 * math.sin(ang))], fill=(255, 220, 120, 255), width=3)
-
+    glow = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    core = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    dg, dc = ImageDraw.Draw(glow), ImageDraw.Draw(core)
+    # (ствол, голова пули): летят мимо медика — над беретом, у земли и только что вылетевшие
+    shots = [((1118, 300), (700, 228)), ((1122, 612), (700, 692)), ((1118, 452), (1035, 432)),
+             ((1128, 372), (1050, 340)), ((1120, 520), (1040, 548))]
+    for (sx, sy), (hx, hy) in shots:
+        ang = math.atan2(sy - hy, sx - hx)
+        length = min(math.hypot(sx - hx, sy - hy) - 20, 280)
+        steps = 30
+        for i in range(steps):
+            t0, t1 = i / steps, (i + 1) / steps
+            a = int(255 * (1 - t0) ** 1.4)
+            p0 = (hx + math.cos(ang) * length * t0, hy + math.sin(ang) * length * t0)
+            p1 = (hx + math.cos(ang) * length * t1, hy + math.sin(ang) * length * t1)
+            dg.line([p0, p1], fill=(255, 160, 40, a // 2), width=16)
+            dc.line([p0, p1], fill=(255, 236, 160, a), width=5)
+        dc.ellipse([hx - 11, hy - 5, hx + 11, hy + 5], fill=(255, 255, 240, 255))
+        # вспышка у ствола
+        for r, col, dr in ((34, (255, 140, 30, 200), dg), (18, (255, 240, 150, 255), dc)):
+            pts = []
+            for j in range(12):
+                rr = r if j % 2 == 0 else r * 0.4
+                a2 = math.pi + (j - 6) * 0.3
+                pts.append((sx + rr * math.cos(a2), sy + rr * math.sin(a2)))
+            dr.polygon(pts, fill=col)
+    im.alpha_composite(glow.filter(ImageFilter.GaussianBlur(3)))
+    im.alpha_composite(core.filter(ImageFilter.GaussianBlur(0.6)))
+    # фонтанчики пыли от промахов
+    d = ImageDraw.Draw(im, "RGBA")
+    for x, y in ((650, 690), (900, 685), (1010, 640)):
+        for _ in range(7):
+            ang = random.uniform(-math.pi * 0.9, -math.pi * 0.1)
+            rr = random.randint(10, 22)
+            d.line([(x, y), (x + rr * math.cos(ang), y + rr * math.sin(ang))], fill=(196, 172, 128, 220), width=3)
 
 def bubble(im, text_lines, tip, box):
     """Комикс-пузырь с хвостиком к голове медика."""
@@ -159,9 +190,13 @@ def scene(shout):
     d.ellipse([600, 560, 840, 640], fill=(120, 14, 14, 200))
     wounded = pawn("south", 230, [], body="Male", shirt_color=(70, 110, 170)).rotate(90, expand=True, resample=Image.BICUBIC)
     im.alpha_composite(wounded, (575, 470))
-    cross_patch(ImageDraw.Draw(im), 812, 590, 15)
+    # бинт на груди раненого
+    db = ImageDraw.Draw(im)
+    db.rounded_rectangle([796, 548, 822, 630], radius=6, fill=(*WHITE, 255), outline=(*OUTLINE, 255), width=3)
+    db.ellipse([802, 578, 816, 594], fill=(170, 30, 30, 255))
     # медик: полная форма, стоит над раненым
-    medic = pawn("south", 380, ["Shirt", "Vest", "Belt"], hat="Beret", goggles=True, body="Male")
+    custom = {"Beret": plain(gen_textures.make_beret, "south"), "Belt": plain(gen_textures.make_belt, "Male", "south")}
+    medic = pawn("south", 380, ["Shirt", "Vest", "Belt"], hat="Beret", goggles=True, body="Male", custom=custom)
     mx, my = 740, 120
     shadow = Image.new("RGBA", im.size, (0, 0, 0, 0))
     ImageDraw.Draw(shadow).ellipse([mx + 70, my + 500, mx + 310, my + 550], fill=(0, 0, 0, 90))
