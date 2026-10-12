@@ -66,20 +66,22 @@ public class Hediff_OnDuty : HediffWithComps
             Scaled.Add(StatDefOf.MedicalTendSpeed);
             Scaled.Add(StatDefOf.MedicalSurgerySuccessChance);
         }
+        // медицинские множители масштабируются качеством: 1.15 при ×1.5 → 1.225, при ×0.5 → 1.075
         var st = new HediffStage
         {
             minSeverity = src.minSeverity,
             label = src.label,
             becomeVisible = src.becomeVisible,
-            statFactors = src.statFactors,
+            statOffsets = src.statOffsets,
             capMods = src.capMods,
-            statOffsets = new List<StatModifier>(),
+            statFactors = new List<StatModifier>(),
         };
-        if (src.statOffsets != null)
+        if (src.statFactors != null)
         {
-            foreach (var m in src.statOffsets)
+            foreach (var m in src.statFactors)
             {
-                st.statOffsets.Add(new StatModifier { stat = m.stat, value = Scaled.Contains(m.stat) ? m.value * f : m.value });
+                float v = Scaled.Contains(m.stat) ? 1f + (m.value - 1f) * f : m.value;
+                st.statFactors.Add(new StatModifier { stat = m.stat, value = v });
             }
         }
         return st;

@@ -13,6 +13,27 @@ namespace Paramedic;
 /// Автотест без участия человека: запуск игры с <c>-quicktest -pmselftest</c>.
 /// Проверяет роль, клятву, крик, способности; отчёт — ParamedicSelfTest.txt рядом с Player.log, затем выход.
 /// </summary>
+/// <summary>Диагностика автотеста: в кого летела пуля, попавшая в защищённого медика.</summary>
+[HarmonyLib.HarmonyPatch(typeof(Bullet), "Impact")]
+public static class SelfTest_BulletImpact_Patch
+{
+    public static bool Prepare() => SelfTestComponent.Enabled;
+
+    public static void Prefix(Bullet __instance, Thing hitThing)
+    {
+        if (hitThing is Pawn p && ShoutUtility.Protected.Contains(p))
+        {
+            float respect = __instance.Launcher is Pawn lp ? ShoutUtility.RespectChance(lp, p) : -1f;
+            bool mustRespect = __instance.Launcher is Pawn lp2 && ShoutUtility.IsProtectedFrom(p, lp2);
+            if (__instance.intendedTarget.Thing != p) SelfTestComponent.StrayHits++;
+            else if (mustRespect) SelfTestComponent.AimedHits++;
+            else SelfTestComponent.AllowedHits++;
+            SelfTestComponent.Events.Add($"  respect={respect:0.##} mustRespect={mustRespect} mental={(__instance.Launcher as Pawn)?.MentalStateDef?.defName}");
+            SelfTestComponent.Events.Add($"bullet hit medic: launcher={__instance.Launcher?.LabelShort}, intended={__instance.intendedTarget.Thing?.LabelShort ?? __instance.intendedTarget.Cell.ToString()}, usedTarget={__instance.usedTarget.Thing?.LabelShort ?? __instance.usedTarget.Cell.ToString()}");
+        }
+    }
+}
+
 public class SelfTestComponent : GameComponent
 {
     private const int LiveFireTicks = 3000;
@@ -29,7 +50,7 @@ public class SelfTestComponent : GameComponent
     private int fails;
 
     /// <summary>Счётчики из патча Verb.TryStartCastOn (только в автотесте).</summary>
-    public static int HostileShots, BlockedShots;
+    public static int HostileShots, BlockedShots, AimedHits, StrayHits, AllowedHits;
 
     public SelfTestComponent(Game game) { }
 
@@ -84,8 +105,19 @@ public class SelfTestComponent : GameComponent
     private void Finish()
     {
         phase = 2;
+        ParamedicMod.Settings.shoutRespectFactor = 1f;
         sb.Insert(0, $"Paramedic self-test: {(fails == 0 ? "PASS" : fails + " FAIL")}\n" +
             $"mods: {string.Join(", ", ModsConfig.ActiveModsInLoadOrder.Select(m => m.PackageId))}\n\n");
+        // сейв для проверки загрузки: RimWorldWin64.exe -dutyloadsave=ParamedicSelfTest (инструмент DutyOptim)
+        try
+        {
+            GameDataSaveLoader.SaveGame("ParamedicSelfTest");
+            sb.AppendLine("\nsaved: ParamedicSelfTest");
+        }
+        catch (Exception e)
+        {
+            sb.AppendLine("\nSAVE FAILED " + e.Message);
+        }
         string path = Path.Combine(GenFilePaths.SaveDataFolderPath, "ParamedicSelfTest.txt");
         File.WriteAllText(path, sb.ToString());
         Log.Message("[Paramedic] self-test written to " + path);
@@ -111,10 +143,20 @@ public class SelfTestComponent : GameComponent
         PawnKindDef gunner = DefDatabase<PawnKindDef>.GetNamedSilentFail("Mercenary_Gunner") ?? PawnKindDefOf.Drifter;
         raiders = new List<Pawn>();
         IntVec3 at = CellFinder.RandomClosewalkCellNear(liveMedic.Position, map, 14);
-        for (int i = 0; i < 3; i++) raiders.Add(SpawnPawn(gunner, pirates, at, map));
+        for (int i = 0; i < 3; i++)
+        {
+            Pawn r = SpawnPawn(gunner, pirates, at, map);
+            // детерминированный бой: без кровожадных (им крик не указ) и без взрывчатки (взрыв не выбирает цель)
+            Trait blood = r.story?.traits?.GetTrait(TraitDefOf.Bloodlust);
+            if (blood != null) r.story.traits.RemoveTrait(blood);
+            r.equipment.DestroyAllEquipment();
+            r.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(DefDatabase<ThingDef>.GetNamed("Gun_AssaultRifle")));
+            raiders.Add(r);
+        }
+        Events.Clear();
         Verse.AI.Group.LordMaker.MakeNewLord(pirates, new LordJob_AssaultColony(pirates, canKidnap: false, canTimeoutOrFlee: false), map, raiders);
         medicInjuriesBefore = InjuryCount(liveMedic);
-        HostileShots = BlockedShots = 0;
+        HostileShots = BlockedShots = AimedHits = StrayHits = AllowedHits = 0;
         liveFireStart = Find.TickManager.TicksGame;
         Find.TickManager.CurTimeSpeed = TimeSpeed.Ultrafast;
     }
@@ -122,7 +164,7 @@ public class SelfTestComponent : GameComponent
     private void EndLiveFire()
     {
         int injuries = InjuryCount(liveMedic) - medicInjuriesBefore;
-        foreach (var h in liveMedic.health.hediffSet.hediffs.OfType<Hediff_Injury>().Skip(medicInjuriesBefore))
+        foreach (var h in liveMedic.health.hediffSet.hediffs.OfType<Hediff_Injury>().Skip(medicInjuriesBefore).ToList())
         {
             sb.AppendLine($"  injury: {h.def.defName} on {h.Part?.Label} source={h.sourceDef?.defName ?? h.sourceLabel ?? "?"}");
         }
@@ -130,9 +172,11 @@ public class SelfTestComponent : GameComponent
         sb.AppendLine($"raiders: {string.Join(", ", raiders.Select(r => r.LabelShort + (r.Dead ? " (dead)" : r.Downed ? " (down)" : "") + " w=" + (r.equipment?.Primary?.def.defName ?? "none")))}");
         sb.AppendLine($"hostile casts: {HostileShots}, blocked at medic: {BlockedShots}");
         Check("raiders actually fought", HostileShots > 0, "casts=" + HostileShots);
-        Check("medic not hit by raiders", injuries == 0, "new injuries=" + injuries);
-        Check("medic still protected (did not attack)", ShoutUtility.Protected.Contains(liveMedic), "");
+        sb.AppendLine($"hits on medic: aimed by respecting {AimedHits}, aimed by non-respecting {AllowedHits}, stray {StrayHits}");
+        Check("no aimed hits on medic", AimedHits == 0, "aimed=" + AimedHits + ", injuries=" + injuries);
+        Check("no perfidy during fight", !Events.Any(e => e.StartsWith("perfidy")), "");
     }
+
 
     private static Apparel Make(string def)
     {
@@ -162,8 +206,9 @@ public class SelfTestComponent : GameComponent
         sb.AppendLine("medic: " + medic.LabelShort + "\n");
         ParamedicMod.Settings.shoutRespectFactor = 10f; // в тесте враги всегда уважают крик
 
-        float tendBefore = medic.GetStatValue(StatDefOf.MedicalTendQuality);
-        float shootBefore = medic.GetStatValue(StatDefOf.ShootingAccuracyPawn);
+        // Сырые (до финализации) значения: в них уже есть множители хедиффов, и их не кэширует сборка
+        float Raw(StatDef s) => s.Worker.GetValueUnfinalized(StatRequest.For(medic));
+        float tendBefore = Raw(StatDefOf.MedicalTendQuality), shootBefore = Raw(StatDefOf.ShootingAccuracyPawn);
 
         // ---- 1. Ядро формы
         medic.apparel.Wear(Make("PM_Apparel_Vest"), dropReplacedApparel: false);
@@ -177,10 +222,12 @@ public class SelfTestComponent : GameComponent
         int stock = medic.inventoryStock.GetDesiredCountForGroup(InventoryStockGroupDefOf.Medicine);
         check("medicine pocket = 3", stock == 3, "stock=" + stock);
         check("rank hediff", medic.health.hediffSet.HasHediff(PM_DefOf.PM_Rank), "");
-        float tendAfter = medic.GetStatValue(StatDefOf.MedicalTendQuality);
-        float shootAfter = medic.GetStatValue(StatDefOf.ShootingAccuracyPawn);
-        check("tend quality up", tendAfter > tendBefore + 0.05f, $"{tendBefore:0.00}->{tendAfter:0.00}");
-        check("shooting down", shootAfter < shootBefore, $"{shootBefore:0.000}->{shootAfter:0.000}");
+        float tendAfter = Raw(StatDefOf.MedicalTendQuality), shootAfter = Raw(StatDefOf.ShootingAccuracyPawn);
+        check("tend quality x1.15", tendAfter > tendBefore * 1.12f, $"{tendBefore:0.000}->{tendAfter:0.000}");
+        check("shooting -4", shootAfter < shootBefore - 3.5f, $"{shootBefore:0.0}->{shootAfter:0.0}");
+        var st = duty?.CurStage;
+        check("stage modifiers", st != null && st.statFactors.Any(m => m.stat == StatDefOf.MedicalTendQuality && m.value > 1.1f)
+            && st.statOffsets.Any(m => m.stat == StatDefOf.ShootingAccuracyPawn && m.value < 0f), "");
 
         // ---- 2. Полная выкладка
         foreach (string d in new[] { "PM_Apparel_Shirt", "PM_Apparel_Pants", "PM_Apparel_Jacket", "PM_Apparel_Goggles", "PM_Apparel_Belt" })

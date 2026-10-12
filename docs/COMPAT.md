@@ -10,7 +10,7 @@
 | `WorkGiver_Warden_DoExecution.JobOnThing` | Postfix | на смене не казнит |
 | `Bill_Medical.PawnAllowedToStartAnew` | Postfix | на смене не делает вредных операций |
 | `Pawn.ThreatDisabled` | Postfix | крик: враг не выбирает медика целью |
-| `Verb.TryStartCastOn(LocalTargetInfo, LocalTargetInfo, …)` | Prefix | крик: страховка от выстрела, подавление автоатак медика, вероломство |
+| `Verb.TryStartCastOn(LocalTargetInfo, LocalTargetInfo, …)` | Prefix | крик: страховка от выстрела (в т.ч. по клетке рядом), подавление автоатак медика, вероломство |
 | `EquipmentUtility.CanEquip(…, out string, bool)` | Postfix | кризис веры, только взрослые |
 | `TendUtility.DoTend` | Postfix | спасённые, мысль пациента, гуманитарка |
 | `Pawn.ExitMap` | Prefix | гуманитарка |
@@ -24,12 +24,16 @@ XML-патчи: `StatDef MoveSpeed/parts` (+ `StatPart_ParamedicCarrying`), `nul
 
 ## Проверено (2026-10-12, RimWorld 1.6.4871, все DLC)
 
-| Набор | Автотест | Бой: медик под крестом среди 3 пиратов, 3000 тиков |
+| Набор | Автотест | Бой: безоружный медик под крестом, 3 пирата с винтовками, 3000 тиков |
 |---|---|---|
-| Harmony + DutyOptim 0.3.2-beta | PASS | 16–17 выстрелов пиратов, 0 попаданий в медика |
-| + CAI 5000 (`krkr.rule56`, мастерская 3673768803) | PASS | 31 выстрел, 0 попаданий |
+| Harmony + DutyOptim 0.3.2-beta | PASS ×2 | 26–39 выстрелов, 0 прицельных попаданий (1 шальная пуля в соседа) |
+| + CAI 5000 (`krkr.rule56`, мастерская 3673768803) | PASS ×4 | 42–62 выстрела, 0 прицельных попаданий |
 
-Отчёт DutyOptim `-dutypatchreport` (с CAI): пересечений наших патчей с чужими — **нет**.
+Сейв после автотеста грузится без ошибок (`-dutyloadsave`). Отчёт DutyOptim `-dutypatchreport` (с CAI):
+пересечений наших патчей с чужими — **нет**.
+
+Найдено и исправлено в ходе проверок: подавляющий огонь CAI по клетке (не по пешке) обходил защиту —
+теперь уважающий враг не стреляет и по клетке рядом с медиком. Кровожадные пираты стреляют по медику — так задумано.
 
 ### Почему крик работает с CAI 5000 и DutyOptim
 - CAI 5000 частично выбирает цели сам (`ThingComp_CombatAI.TryRangedReaction` пишет `mindState.enemyTarget`

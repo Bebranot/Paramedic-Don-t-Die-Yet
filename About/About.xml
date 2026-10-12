@@ -4,6 +4,7 @@
   <author>bebranotyep</author>
   <packageId>bebranotyep.paramedic</packageId>
   <modVersion>1.0.0</modVersion>
+  <url>https://github.com/Bebranot/Paramedic-Don-t-Die-Yet-</url>
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>
@@ -23,18 +24,30 @@
     <li>Ludeon.RimWorld.Biotech</li>
     <li>Ludeon.RimWorld.Anomaly</li>
     <li>Ludeon.RimWorld.Odyssey</li>
-    <li>bebranot.airimworldslop</li>
   </loadAfter>
   <incompatibleWith>
     <li>CETeam.CombatExtended</li>
   </incompatibleWith>
-  <description>A field medic role, earned by wearing the uniform.
+  <description>A field medic role you put on with the uniform.
 
-Put on the paramedic vest and beret (or helmet) and your colonist goes "on duty": better tending, safer surgery, faster rescues — and an oath. Kill or maim a human with your own hands and it will weigh on you for days.
+Wear the paramedic vest together with the beret (or helmet) and your colonist goes ON DUTY: better and faster tending, safer surgery, faster rescues - and an oath. Kill or maim a human with your own hands and it will weigh on them for days.
 
-• 8 uniform pieces across every apparel layer, from cheap cloth shirts to plasteel rescue jackets.
-• Abilities: Field Stabilization, "Medic! Hold your fire!" and Adrenaline.
-• Medicine pocket in the vest, ranks from Trainee to Legend, burnout, humanitarian goodwill.
+UNIFORM
+- 8 red-and-white pieces on every apparel layer: shirt, pants, vest, rescue jacket, beret, helmet, thermal goggles, medicine rig.
+- 3 research projects in their own tab; cheap cloth early, plasteel and components late.
+- More pieces worn - stronger bonuses (basic / equipped / full kit), scaled by quality.
 
-Полевой медик, роль даётся формой. Английский и русский языки.</description>
+ABILITIES
+- Field Stabilization: stop all bleeding on a downed person for 6 hours.
+- "Medic! Hold your fire!": most hostile humans stop targeting you for a few hours. Attack while protected and it's perfidy.
+- Adrenaline Shot: a downed ally gets up for half a minute to reach cover.
+
+AND ALSO
+- Medicine pocket (3, or 6 with the rig), ranks from Trainee to Legend, burnout, "couldn't save them", humanitarian goodwill, triage time in the Rescue menu.
+- The oath: -5 to -20 mood for killing/maiming, weaker with rank; crisis of faith after repeated violations.
+- Mod settings; English and Russian.
+
+Requires Harmony. Not compatible with Combat Extended. Humans only (no alien race support). Safe to add to an existing save.
+
+Полевой медик: роль даётся формой. Русский язык в комплекте.</description>
 </ModMetaData>

@@ -1,97 +1,84 @@
-﻿"""Генерация текстур формы парамедика.
+﻿"""Генерация всех текстур мода «Paramedic: Don't Die Yet!».
 
-Силуэт, обводка и объём (светотень) берутся из готовой одежды мода [RH2] Rimmu-Nation² - Clothing
-(мастерская 2563506048) — так форма гарантированно садится на все типы тел. Цвет, полосы, кресты,
-нашивки рисуются здесь. Иконки способностей, шприц, штаны — нарисованы с нуля.
+Основа — ванильные текстуры RimWorld (силуэты рубашки, лётной куртки, каски, тел и голов), их достаёт
+tools/extract_vanilla.py в tools/_vanilla/. Отсюда берутся только форма и светотень; цвет, полосы,
+кресты, берет, очки и разгрузка рисуются здесь. Рисуем в 4× (512) и уменьшаем до 256 со сглаживанием.
 
-ВНИМАНИЕ: перед публикацией в Steam силуэты RH2 нужно заменить своими (см. docs/QUESTIONS.md).
-
+    python tools/extract_vanilla.py   # один раз (нужен UnityPy)
     python tools/gen_textures.py
 """
-import math
 import os
 import sys
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-RH2 = r"C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2563506048\Textures\Things\Apparel"
+VAN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_vanilla")
 OUT = os.path.join(ROOT, "Textures", "Things", "Paramedic")
 UI = os.path.join(ROOT, "Textures", "UI", "Abilities")
 
 BODIES = ["Male", "Female", "Thin", "Hulk", "Fat"]
 DIRS = ["south", "east", "north"]
+K = 4                 # внутренний масштаб: 128 → 512
+FINAL = 256           # размер итоговых текстур одежды
 
-# Палитра
-RED = (196, 36, 40)
-RED_DARK = (140, 22, 28)
-WHITE = (236, 236, 230)
-REFLECT = (214, 222, 160)      # светоотражающая полоса (чуть желтоватая)
-GREEN = (30, 150, 70)
-OUTLINE = (24, 20, 20)
-LEATHER = (92, 60, 40)
-STEEL = (150, 156, 162)
+# Палитра (приглушённая, под ванильный стиль)
+RED = (180, 42, 40)
+RED_DARK = (128, 28, 28)
+WHITE = (234, 231, 222)
+REFLECT = (214, 216, 196)
+REFLECT_EDGE = (150, 152, 140)
+GREEN = (40, 152, 74)
+STRAP = (64, 64, 68)
+OUTLINE = (20, 18, 18)
+LENS = (70, 205, 120)
+STEEL = (165, 170, 176)
 
 
-def lum(c):
-    return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+# ------------------------------------------------------------------ утилиты
+def van(name):
+    """Ванильная текстура, увеличенная до 512."""
+    im = Image.open(os.path.join(VAN, name + ".png")).convert("RGBA")
+    return im.resize((im.width * K, im.height * K), Image.LANCZOS)
 
 
-def mul(c, k):
+def vanilla_name(base, body, d):
+    # у лётной куртки тела в нижнем регистре
+    if base == "FlakJacket":
+        return f"FlakJacket_{body.lower()}_{d}"
+    return f"{base}_{body}_{d}"
+
+
+def lum(r, g, b):
+    return 0.299 * r + 0.587 * g + 0.114 * b
+
+
+def alpha_mask(im, thr=128):
+    return im.split()[3].point(lambda v: 255 if v > thr else 0)
+
+
+def bbox(mask):
+    return mask.getbbox()
+
+
+def erode(mask, px):
+    return mask.filter(ImageFilter.MinFilter(px * 2 + 1)) if px > 0 else mask
+
+
+def dilate(mask, px):
+    return mask.filter(ImageFilter.MaxFilter(px * 2 + 1)) if px > 0 else mask
+
+
+def mix(a, b, t):
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def shade(c, k):
     return tuple(max(0, min(255, int(v * k))) for v in c)
 
 
-def load(path):
-    return Image.open(path).convert("RGBA")
-
-
-def bbox_alpha(im, thr=8):
-    a = im.split()[3].point(lambda v: 255 if v > thr else 0)
-    return a.getbbox()
-
-
-def recolor(src, painter, flat_shade=False):
-    """Перекраска: обводка остаётся тёмной, внутренность красится painter(xr, yr) с объёмом из исходника."""
-    w, h = src.size
-    px = src.load()
-    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    po = out.load()
-    bb = bbox_alpha(src)
-    if not bb:
-        return out
-    x0, y0, x1, y1 = bb
-    bw, bh = max(1, x1 - x0), max(1, y1 - y0)
-    # средняя яркость внутренности — для нормировки светотени
-    vals = [lum(px[x, y]) for y in range(h) for x in range(w) if px[x, y][3] > 200 and lum(px[x, y]) > 70]
-    mean = sum(vals) / len(vals) if vals else 200
-    # обводка — тёмные пиксели у края силуэта (внутренние тёмные пятна камуфляжа не считаются)
-    alpha = src.split()[3].point(lambda v: 255 if v > 8 else 0)
-    near_edge = alpha.filter(ImageFilter.MinFilter(max(3, w // 40 * 2 + 1))).load()
-    for y in range(h):
-        for x in range(w):
-            r, g, b, a = px[x, y]
-            if a < 8:
-                continue
-            L = lum((r, g, b))
-            if flat_shade and near_edge[x, y] == 0 or not flat_shade and L < 55:
-                po[x, y] = (*OUTLINE, a)
-                continue
-            shade = 1.0 if flat_shade else max(0.55, min(1.2, L / mean))
-            c = painter((x - x0) / bw, (y - y0) / bh)
-            po[x, y] = (*mul(c, shade), a)
-    return out
-
-
-def draw_cross(im, cx, cy, size, patch=True, outline=True):
-    """Зелёный крест на белой плашке (знак первой помощи)."""
-    d = ImageDraw.Draw(im)
-    s = size
-    if patch:
-        d.rectangle([cx - s, cy - s, cx + s, cy + s], fill=(*WHITE, 255), outline=(*OUTLINE, 255) if outline else None)
-    t = max(1, int(s * 0.36))
-    a = int(s * 0.8)
-    d.rectangle([cx - t, cy - a, cx + t, cy + a], fill=(*GREEN, 255))
-    d.rectangle([cx - a, cy - t, cx + a, cy + t], fill=(*GREEN, 255))
+def finish(im, size=FINAL):
+    return im.resize((size, size), Image.LANCZOS)
 
 
 def save(im, *parts):
@@ -101,292 +88,449 @@ def save(im, *parts):
     return path
 
 
-def apply_decor(im, decorate, d):
-    """Нашивки рисуются на отдельном слое и обрезаются по силуэту вещи (не вылезают за край)."""
-    bb = bbox_alpha(im, thr=128)
-    if not bb or not decorate:
-        return
-    if getattr(decorate, "in_place", False):
-        decorate(im, d, bb)
-        return
-    layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
-    decorate(layer, d, bb)
-    layer.putalpha(ImageChops.darker(layer.split()[3], im.split()[3]))
+def recolor(src, painter):
+    """Перекраска ванильной основы: тёмная обводка остаётся, внутренность — painter(xr, yr) × светотень."""
+    w, h = src.size
+    px = src.load()
+    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    po = out.load()
+    inner = alpha_mask(src)
+    x0, y0, x1, y1 = bbox(inner)
+    bw, bh = max(1, x1 - x0), max(1, y1 - y0)
+    lums = sorted(lum(*px[x, y][:3]) for y in range(0, h, 2) for x in range(0, w, 2) if px[x, y][3] > 200 and lum(*px[x, y][:3]) > 120)
+    ref = lums[int(len(lums) * 0.9)] if lums else 230
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a < 4:
+                continue
+            L = lum(r, g, b)
+            t = max(0.0, min(1.0, (L - 45) / 60))          # 0 — обводка, 1 — внутренность
+            c = painter((x - x0) / bw, (y - y0) / bh)
+            k = max(0.72, min(1.06, L / ref))
+            po[x, y] = (*mix(OUTLINE, shade(c, k), t), a)
+    return out
+
+
+def interior(im):
+    """Маска внутренней части (без обводки) — для обрезки нашивок."""
+    m = Image.new("L", im.size, 0)
+    pi, pm = im.load(), m.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = pi[x, y]
+            if a > 200 and lum(r, g, b) > 70:
+                pm[x, y] = 255
+    return erode(m, 2)
+
+
+def overlay_clipped(im, layer, mask):
+    layer.putalpha(ImageChops.darker(layer.split()[3], mask))
     im.alpha_composite(layer)
 
 
-def body_set(name, src_dir, src_base, painter, decorate, flat=False):
-    for body in BODIES:
-        for d in DIRS:
-            src = load(os.path.join(RH2, src_dir, f"{src_base}_{body}_{d}.png"))
-            im = recolor(src, painter(d), flat_shade=flat)
-            apply_decor(im, decorate, d)
-            save(im, OUT, "Apparel", name, f"PM_{name}_{body}_{d}.png")
+def cross_patch(d, cx, cy, r, patch=True):
+    """Знак первой помощи: зелёный крест на белой скруглённой плашке с тонкой обводкой."""
+    if patch:
+        d.rounded_rectangle([cx - r, cy - r, cx + r, cy + r], radius=max(2, r // 4),
+                            fill=(*WHITE, 255), outline=(*OUTLINE, 255), width=max(2, r // 7))
+    a = int(r * 0.72)
+    t = max(2, int(r * 0.24))
+    d.rectangle([cx - t, cy - a, cx + t, cy + a], fill=(*GREEN, 255))
+    d.rectangle([cx - a, cy - t, cx + a, cy + t], fill=(*GREEN, 255))
 
 
-def head_set(name, src_dir, src_base, painter, decorate, flat=False):
-    for d in DIRS:
-        src = load(os.path.join(RH2, src_dir, f"{src_base}_{d}.png"))
-        im = recolor(src, painter(d), flat_shade=flat)
-        apply_decor(im, decorate, d)
-        save(im, OUT, "Apparel", name, f"PM_{name}_{d}.png")
+def reflect_band(d, x0, x1, y0, y1):
+    d.rectangle([x0, y0, x1, y1], fill=(*REFLECT, 255))
+    e = max(2, (y1 - y0) // 6)
+    d.rectangle([x0, y0, x1, y0 + e], fill=(*REFLECT_EDGE, 255))
+    d.rectangle([x0, y1 - e, x1, y1], fill=(*REFLECT_EDGE, 255))
 
 
-def icon_from(name, body="Male", d="south", size=128):
-    """Иконка на земле: вид спереди, обрезан и вписан в квадрат."""
-    path = os.path.join(OUT, "Apparel", name, f"PM_{name}_{body}_{d}.png")
-    if not os.path.exists(path):
-        path = os.path.join(OUT, "Apparel", name, f"PM_{name}_{d}.png")
-    im = load(path)
-    bb = bbox_alpha(im)
-    crop = im.crop(bb)
-    k = (size * 0.86) / max(crop.size)
-    crop = crop.resize((max(1, int(crop.width * k)), max(1, int(crop.height * k))), Image.LANCZOS)
-    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    canvas.alpha_composite(crop, ((size - crop.width) // 2, (size - crop.height) // 2))
-    save(canvas, OUT, "Apparel", name, f"PM_{name}.png")
+# ------------------------------------------------------------------ рубашка-поло
+def make_shirt(body, d):
+    src = van(vanilla_name("ShirtBasic", body, d))
 
-
-# ------------------------------------------------------------------ рубашка (поло)
-def shirt_painter(d):
     def p(xr, yr):
-        if yr < 0.16:
-            return WHITE                               # белый воротник/плечи
-        if 0.50 < yr < 0.58:
-            return REFLECT                             # светоотражающая вставка
-        return RED
-    return p
-
-
-def shirt_decor(im, d, bb):
-    x0, y0, x1, y1 = bb
+        return RED if yr < 0.17 else WHITE           # красная кокетка, белое поло
+    im = recolor(src, p)
+    m = erode(alpha_mask(im), 12)   # по силуэту: нашивка перекрывает швы
+    x0, y0, x1, y1 = bbox(m)
+    w, h = x1 - x0, y1 - y0
+    layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    dr = ImageDraw.Draw(layer)
+    dr.rectangle([x0, y0 + int(h * 0.80), x1, y0 + int(h * 0.84)], fill=(*RED, 255))   # красная полоса внизу
     if d == "south":
-        draw_cross(im, int(x0 + (x1 - x0) * 0.68), int(y0 + (y1 - y0) * 0.30), max(3, (x1 - x0) // 14))
+        cross_patch(dr, x0 + int(w * 0.70), y0 + int(h * 0.33), max(10, w // 11))
+    overlay_clipped(im, layer, m)
+    return im
 
 
-# ------------------------------------------------------------------ жилет
-def vest_painter(d):
+# ------------------------------------------------------------------ жилет (своя форма по силуэту рубашки)
+def make_vest(body, d):
+    base = van(vanilla_name("ShirtBasic", body, d))
+    shape = alpha_mask(base)
+    shape = dilate(shape, 6)                         # чуть шире рубашки, чтобы её перекрывать
+    x0, y0, x1, y1 = bbox(shape)
+    w, h = x1 - x0, y1 - y0
+    cut = Image.new("L", shape.size, 0)
+    dc = ImageDraw.Draw(cut)
+    # проймы/низ: жилет короче рубашки и открывает плечи
+    dc.rectangle([x0, y1 - int(h * 0.08), x1, y1], fill=255)
+    if d == "south":
+        cx = x0 + w // 2
+        dc.polygon([(cx - int(w * 0.17), y0), (cx + int(w * 0.17), y0), (cx, y0 + int(h * 0.42))], fill=255)
+    elif d == "north":
+        cx = x0 + w // 2
+        dc.ellipse([cx - int(w * 0.16), y0 - int(h * 0.08), cx + int(w * 0.16), y0 + int(h * 0.10)], fill=255)
+    else:
+        dc.ellipse([x0 + int(w * 0.30), y0 - int(h * 0.08), x0 + int(w * 0.80), y0 + int(h * 0.09)], fill=255)
+    shape = ImageChops.subtract(shape, cut)
+    shape = shape.filter(ImageFilter.GaussianBlur(2)).point(lambda v: 255 if v > 128 else 0)
+
+    # светотень берём у рубашки, обводку рисуем сами
+    im = Image.new("RGBA", shape.size, (0, 0, 0, 0))
+    ring = ImageChops.subtract(shape, erode(shape, 9))
+    inner = erode(shape, 9)
+    bx0, by0, bx1, by1 = bbox(inner)
+    bw, bh = bx1 - bx0, by1 - by0
+    pb, pi, pr, po = base.load(), inner.load(), ring.load(), im.load()
+
+    def p(xr, yr):
+        if d != "east" and (0.20 < xr < 0.30 or 0.70 < xr < 0.80) and yr < 0.55:
+            return REFLECT                           # светоотражающие «подтяжки»
+        if 0.58 < yr < 0.68:
+            return REFLECT                           # поясная полоса
+        return RED
+
+    for y in range(im.height):
+        for x in range(im.width):
+            if pr[x, y]:
+                po[x, y] = (*OUTLINE, 255)
+            elif pi[x, y]:
+                r, g, b, a = pb[x, y]
+                k = 0.9 + 0.12 * (lum(r, g, b) / 255) if a > 0 else 0.95
+                c = p((x - bx0) / bw, (y - by0) / bh)
+                po[x, y] = (*shade(c, k), 255)
+    layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    dr = ImageDraw.Draw(layer)
+    # тонкие края светоотражающих полос
+    for yy in (0.58, 0.68):
+        y = by0 + int(bh * yy)
+        dr.line([(bx0, y), (bx1, y)], fill=(*REFLECT_EDGE, 255), width=3)
+    if d == "south":
+        cross_patch(dr, bx0 + int(bw * 0.66), by0 + int(bh * 0.42), max(10, bw // 12))
+    elif d == "north":
+        cross_patch(dr, bx0 + bw // 2, by0 + int(bh * 0.40), max(16, bw // 7))
+    else:
+        cross_patch(dr, bx0 + int(bw * 0.45), by0 + int(bh * 0.32), max(9, bw // 9))
+    overlay_clipped(im, layer, inner)
+    return im
+
+
+# ------------------------------------------------------------------ куртка спасателя (основа — лётная куртка)
+def make_jacket(body, d):
+    src = van(vanilla_name("FlakJacket", body, d))
+
     def p(xr, yr):
         if 0.56 < yr < 0.66:
             return REFLECT
-        if d != "east" and (xr < 0.16 or xr > 0.84):
-            return WHITE                               # белые боковины
+        if yr < 0.24:
+            return WHITE                             # белый верх/воротник
         return RED
-    return p
-
-
-def vest_decor(im, d, bb):
-    x0, y0, x1, y1 = bb
+    im = recolor(src, p)
+    m = erode(alpha_mask(im), 12)   # по силуэту: нашивка перекрывает швы
+    x0, y0, x1, y1 = bbox(m)
     w, h = x1 - x0, y1 - y0
-    if d == "south":
-        draw_cross(im, int(x0 + w * 0.68), int(y0 + h * 0.44), max(4, w // 11))
-    elif d == "north":
-        draw_cross(im, x0 + w // 2, int(y0 + h * 0.38), max(6, w // 5))
-    else:
-        draw_cross(im, int(x0 + w * 0.5), int(y0 + h * 0.34), max(3, w // 8))
-
-
-# ------------------------------------------------------------------ куртка спасателя
-def jacket_painter(d):
-    def p(xr, yr):
-        if 0.40 < yr < 0.47 or 0.80 < yr < 0.87:
-            return REFLECT                             # две широкие полосы
-        if yr < 0.14:
-            return RED_DARK                            # тёмный воротник
-        if d == "east":
-            return WHITE if yr < 0.40 else RED
-        return WHITE if (xr < 0.28 or xr > 0.72) and yr < 0.40 else RED
-    return p
-
-
-def jacket_decor(im, d, bb):
-    x0, y0, x1, y1 = bb
-    w, h = x1 - x0, y1 - y0
+    layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    dr = ImageDraw.Draw(layer)
+    for yy in (0.56, 0.66):
+        y = y0 + int(h * yy)
+        dr.line([(x0, y), (x1, y)], fill=(*REFLECT_EDGE, 255), width=3)
     if d == "north":
-        draw_cross(im, x0 + w // 2, int(y0 + h * 0.28), max(6, w // 5))
+        cross_patch(dr, x0 + w // 2, y0 + int(h * 0.46), max(16, w // 7))
     elif d == "south":
-        draw_cross(im, int(x0 + w * 0.30), int(y0 + h * 0.27), max(3, w // 14))
-
-
-# ------------------------------------------------------------------ разгрузка
-def belt_painter(d):
-    def p(xr, yr):
-        # тёмная стропа, по краям — красные подсумки
-        return RED if xr < 0.22 or xr > 0.78 else (58, 58, 62)
-    return p
-
-
-def belt_decor(im, d, bb):
-    x0, y0, x1, y1 = bb
-    w, h = x1 - x0, y1 - y0
-    if d in ("south", "north"):
-        draw_cross(im, x0 + int(w * 0.75), y0 + h // 2, max(2, min(w, h) // 5))
-
-
-# ------------------------------------------------------------------ берет
-def beret_painter(d):
-    def p(xr, yr):
-        return RED if yr < 0.82 else RED_DARK          # кант снизу
-    return p
-
-
-def beret_decor(im, d, bb):
-    x0, y0, x1, y1 = bb
-    w, h = x1 - x0, y1 - y0
-    if d == "south":
-        draw_cross(im, x0 + int(w * 0.30), y0 + int(h * 0.55), max(3, w // 12))
-    elif d == "east":
-        draw_cross(im, x0 + int(w * 0.62), y0 + int(h * 0.55), max(3, w // 10))
-
-
-# ------------------------------------------------------------------ каска
-def helmet_painter(d):
-    def p(xr, yr):
-        return RED if 0.62 < yr < 0.74 else WHITE      # красная лента
-    return p
-
-
-def helmet_decor(im, d, bb):
-    x0, y0, x1, y1 = bb
-    w, h = x1 - x0, y1 - y0
-    if d == "south":
-        draw_cross(im, x0 + w // 2, y0 + int(h * 0.36), max(3, w // 9))
-    elif d == "north":
-        draw_cross(im, x0 + w // 2, y0 + int(h * 0.40), max(3, w // 8))
+        cross_patch(dr, x0 + int(w * 0.27), y0 + int(h * 0.36), max(9, w // 13))
     else:
-        draw_cross(im, x0 + int(w * 0.45), y0 + int(h * 0.38), max(3, w // 9))
+        cross_patch(dr, x0 + int(w * 0.40), y0 + int(h * 0.36), max(9, w // 10))
+    overlay_clipped(im, layer, m)
+    return im
 
 
-# ------------------------------------------------------------------ очки
-def goggles_painter(d):
+# ------------------------------------------------------------------ разгрузка (по силуэту тела)
+def make_belt(body, d):
+    naked = van(f"Naked_{body}_{d}")
+    bodym = alpha_mask(naked)
+    x0, y0, x1, y1 = bbox(bodym)
+    w, h = x1 - x0, y1 - y0
+    shape = Image.new("L", bodym.size, 0)
+    ds = ImageDraw.Draw(shape)
+    by0, by1 = y0 + int(h * 0.66), y0 + int(h * 0.75)
+    ds.rectangle([x0 - 8, by0, x1 + 8, by1], fill=255)         # ремень
+    band = ImageChops.darker(shape, dilate(bodym, 8))
+    pouches = Image.new("L", bodym.size, 0)
+    dp = ImageDraw.Draw(pouches)
+    pw, ph = int(w * 0.20), int(h * 0.17)
+    if d == "east":
+        spots = [x0 + int(w * 0.08)]                            # подсумок сзади
+    else:
+        spots = [x0 + int(w * 0.06), x1 - int(w * 0.06) - pw]
+    for sx in spots:
+        dp.rounded_rectangle([sx, by0 - int(ph * 0.25), sx + pw, by0 + ph], radius=10, fill=255)
+    shape = ImageChops.lighter(band, pouches)
+    im = Image.new("RGBA", shape.size, (0, 0, 0, 0))
+    ring = ImageChops.subtract(shape, erode(shape, 8))
+    inner = erode(shape, 8)
+    po, pr, pi, pp = im.load(), ring.load(), inner.load(), erode(pouches, 8).load()
+    for y in range(im.height):
+        for x in range(im.width):
+            if pr[x, y]:
+                po[x, y] = (*OUTLINE, 255)
+            elif pi[x, y]:
+                po[x, y] = (*(RED if pp[x, y] else STRAP), 255)
+    layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    dr = ImageDraw.Draw(layer)
+    if d == "south":
+        cross_patch(dr, spots[-1] + pw // 2, by0 + int(ph * 0.35), max(9, pw // 3))
+    # пряжка
+    cx = x0 + w // 2
+    if d != "east":
+        dr.rounded_rectangle([cx - 16, by0 + 4, cx + 16, by1 - 4], radius=4, fill=(*STEEL, 255), outline=(*OUTLINE, 255), width=3)
+    overlay_clipped(im, layer, inner)
+    return im
+
+
+# ------------------------------------------------------------------ каска (основа — продвинутый шлем)
+def make_helmet(d):
+    src = van(f"AdvancedHelmet_{d}")
+
     def p(xr, yr):
-        return (60, 64, 70)
-    return p
+        return RED if 0.60 < yr < 0.76 else WHITE
+    im = recolor(src, p)
+    m = erode(alpha_mask(im), 12)   # по силуэту: нашивка перекрывает швы
+    x0, y0, x1, y1 = bbox(m)
+    w, h = x1 - x0, y1 - y0
+    layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    dr = ImageDraw.Draw(layer)
+    if d == "south":
+        cross_patch(dr, x0 + w // 2, y0 + int(h * 0.34), max(12, w // 9))
+    elif d == "north":
+        cross_patch(dr, x0 + w // 2, y0 + int(h * 0.38), max(12, w // 8))
+    else:
+        cross_patch(dr, x0 + int(w * 0.42), y0 + int(h * 0.36), max(12, w // 10))
+    overlay_clipped(im, layer, m)
+    return im
 
 
-def goggles_decor(im, d, bb):
-    # линзы — зелёный отблеск тепловизора
-    px = im.load()
-    x0, y0, x1, y1 = bb
-    for y in range(y0, y1):
-        for x in range(x0, x1):
-            r, g, b, a = px[x, y]
-            if a > 200 and (r, g, b) != OUTLINE and (y - y0) / max(1, y1 - y0) > 0.25:
-                px[x, y] = (70, 200, 110, a)
+# ------------------------------------------------------------------ берет (рисуется с нуля)
+def make_beret(d):
+    S = 128 * K
+    shape = Image.new("L", (S, S), 0)
+    ds = ImageDraw.Draw(shape)
+    s = K
+    if d == "south":
+        ds.ellipse([36 * s, 36 * s, 92 * s, 55 * s], fill=255)        # тулья
+        ds.ellipse([56 * s, 33 * s, 98 * s, 50 * s], fill=255)        # сдвинутый набок верх
+        band = [39 * s, 47 * s, 89 * s, 55 * s]
+        badge = (50 * s, 46 * s)
+    elif d == "east":
+        ds.ellipse([38 * s, 36 * s, 90 * s, 56 * s], fill=255)
+        ds.ellipse([30 * s, 34 * s, 66 * s, 51 * s], fill=255)        # верх свисает назад
+        band = [42 * s, 48 * s, 90 * s, 56 * s]
+        badge = (79 * s, 47 * s)
+    else:
+        ds.ellipse([37 * s, 36 * s, 91 * s, 56 * s], fill=255)
+        ds.ellipse([31 * s, 33 * s, 70 * s, 50 * s], fill=255)
+        band = [39 * s, 48 * s, 89 * s, 56 * s]
+        badge = None
+    db = ImageDraw.Draw(shape)
+    db.rounded_rectangle(band, radius=4 * s, fill=255)
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    ring = ImageChops.subtract(shape, erode(shape, 9))
+    inner = erode(shape, 9)
+    x0, y0, x1, y1 = bbox(inner)
+    po, pr, pi = im.load(), ring.load(), inner.load()
+    for y in range(S):
+        for x in range(S):
+            if pr[x, y]:
+                po[x, y] = (*OUTLINE, 255)
+            elif pi[x, y]:
+                yr = (y - y0) / max(1, y1 - y0)
+                xr = (x - x0) / max(1, x1 - x0)
+                k = 1.04 - 0.22 * yr + (0.05 if xr > 0.55 and d == "south" else 0)
+                po[x, y] = (*shade(RED_DARK if y >= band[1] + 6 else RED, k), 255)
+    layer = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    dr = ImageDraw.Draw(layer)
+    if badge:
+        cross_patch(dr, badge[0], badge[1], 6 * s)
+    overlay_clipped(im, layer, inner)
+    return im
 
 
-goggles_decor.in_place = True   # перекрашивает пиксели самой вещи, а не рисует поверх
+# ------------------------------------------------------------------ очки-тепловизор (рисуются с нуля)
+def make_goggles(d):
+    S = 128 * K
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    dr = ImageDraw.Draw(im)
+    s = K
+    ey = 70 * s
+    if d == "north":
+        dr.rounded_rectangle([40 * s, ey - 4 * s, 88 * s, ey + 3 * s], radius=2 * s, fill=(*STRAP, 255), outline=(*OUTLINE, 255), width=2 * s)
+        return im
+    if d == "south":
+        dr.rounded_rectangle([40 * s, ey - 3 * s, 88 * s, ey + 3 * s], radius=2 * s, fill=(*STRAP, 255), outline=(*OUTLINE, 255), width=2 * s)
+        for cx in (55, 73):
+            dr.rounded_rectangle([(cx - 9) * s, ey - 7 * s, (cx + 9) * s, ey + 6 * s], radius=4 * s, fill=(*STRAP, 255), outline=(*OUTLINE, 255), width=2 * s)
+            dr.rounded_rectangle([(cx - 6) * s, ey - 4 * s, (cx + 6) * s, ey + 3 * s], radius=3 * s, fill=(*LENS, 255))
+            dr.ellipse([(cx - 4) * s, ey - 3 * s, (cx - 1) * s, ey], fill=(220, 255, 230, 255))   # блик
+    else:
+        dr.rounded_rectangle([40 * s, ey - 3 * s, 84 * s, ey + 3 * s], radius=2 * s, fill=(*STRAP, 255), outline=(*OUTLINE, 255), width=2 * s)
+        cx = 80
+        dr.rounded_rectangle([(cx - 7) * s, ey - 7 * s, (cx + 8) * s, ey + 6 * s], radius=4 * s, fill=(*STRAP, 255), outline=(*OUTLINE, 255), width=2 * s)
+        dr.rounded_rectangle([(cx - 2) * s, ey - 4 * s, (cx + 6) * s, ey + 3 * s], radius=3 * s, fill=(*LENS, 255))
+    return im
 
 
-# ------------------------------------------------------------------ штаны (иконка, на теле не рисуются)
-def pants_icon(size=128):
-    im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    s = size / 128
-    poly = [(34, 18), (94, 18), (100, 112), (72, 112), (64, 52), (56, 112), (28, 112)]
-    poly = [(x * s, y * s) for x, y in poly]
-    d.polygon(poly, fill=(*RED, 255), outline=(*OUTLINE, 255))
-    d.line(poly + [poly[0]], fill=(*OUTLINE, 255), width=int(4 * s))
-    d.rectangle([34 * s, 18 * s, 94 * s, 28 * s], fill=(*RED_DARK, 255), outline=(*OUTLINE, 255), width=int(3 * s))
-    for y in (78, 84):
-        d.line([(31 * s, y * s), (59 * s, y * s)], fill=(*REFLECT, 255), width=int(4 * s))
-        d.line([(69 * s, y * s), (97 * s, y * s)], fill=(*REFLECT, 255), width=int(4 * s))
-    d.rectangle([34 * s, 46 * s, 50 * s, 62 * s], fill=(*RED_DARK, 255), outline=(*OUTLINE, 255), width=int(2 * s))
-    d.rectangle([78 * s, 46 * s, 94 * s, 62 * s], fill=(*RED_DARK, 255), outline=(*OUTLINE, 255), width=int(2 * s))
-    save(im, OUT, "Apparel", "Pants", "PM_Pants.png")
+# ------------------------------------------------------------------ иконки и прочее
+def icon_from(im_512, size=128, pad=0.86):
+    m = alpha_mask(im_512, 20)
+    crop = im_512.crop(bbox(m))
+    k = (size * K * pad) / max(crop.size)
+    crop = crop.resize((max(1, int(crop.width * k)), max(1, int(crop.height * k))), Image.LANCZOS)
+    canvas = Image.new("RGBA", (size * K, size * K), (0, 0, 0, 0))
+    canvas.alpha_composite(crop, ((canvas.width - crop.width) // 2, (canvas.height - crop.height) // 2))
+    return canvas.resize((size, size), Image.LANCZOS)
 
 
-# ------------------------------------------------------------------ шприц
+def make_pants_icon():
+    src = van("FlakPants")
+
+    def p(xr, yr):
+        if 0.62 < yr < 0.68 or 0.74 < yr < 0.80:
+            return REFLECT
+        return RED if yr > 0.12 else RED_DARK
+    return recolor(src, p)
+
+
 def syringe_icon(size=64):
-    big = Image.new("RGBA", (size * 4, size * 4), (0, 0, 0, 0))
-    d = ImageDraw.Draw(big)
-    S = size * 4
-    # корпус по диагонали
-    body = [(0.22, 0.70), (0.62, 0.30), (0.74, 0.42), (0.34, 0.82)]
-    d.polygon([(x * S, y * S) for x, y in body], fill=(230, 236, 240, 255), outline=(*OUTLINE, 255), width=10)
-    liquid = [(0.30, 0.66), (0.56, 0.40), (0.64, 0.48), (0.38, 0.74)]
-    d.polygon([(x * S, y * S) for x, y in liquid], fill=(240, 190, 40, 255))
-    d.line([(0.68 * S, 0.36 * S), (0.86 * S, 0.18 * S)], fill=(*OUTLINE, 255), width=22)
-    d.line([(0.68 * S, 0.36 * S), (0.86 * S, 0.18 * S)], fill=(*RED, 255), width=12)
-    d.line([(0.28 * S, 0.76 * S), (0.12 * S, 0.92 * S)], fill=(*OUTLINE, 255), width=10)
-    d.line([(0.28 * S, 0.76 * S), (0.12 * S, 0.92 * S)], fill=(*STEEL, 255), width=5)
-    im = big.resize((size, size), Image.LANCZOS)
-    draw_cross(im, int(size * 0.52), int(size * 0.48), max(3, size // 12), patch=False)
-    save(im, OUT, "Item", "PM_AdrenalineSyringe.png")
-
-
-# ------------------------------------------------------------------ иконки способностей
-def ability_base(size=128):
-    im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    S = size * K * 2
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
-    d.rounded_rectangle([4, 4, size - 5, size - 5], radius=18, fill=(*RED_DARK, 255), outline=(*OUTLINE, 255), width=4)
-    return im, d
+    w = S // 40
+
+    def line(a, b, col, width):
+        d.line([(a[0] * S, a[1] * S), (b[0] * S, b[1] * S)], fill=(*col, 255), width=width)
+
+    line((0.70, 0.30), (0.88, 0.12), OUTLINE, w * 7)     # поршень
+    line((0.70, 0.30), (0.88, 0.12), RED, w * 4)
+    line((0.27, 0.73), (0.10, 0.90), OUTLINE, w * 4)     # игла
+    line((0.27, 0.73), (0.10, 0.90), STEEL, w * 2)
+    body = [(0.20, 0.68), (0.64, 0.24), (0.78, 0.38), (0.34, 0.82)]
+    d.polygon([(x * S, y * S) for x, y in body], fill=(*WHITE, 255), outline=(*OUTLINE, 255), width=w * 2)
+    liquid = [(0.29, 0.66), (0.56, 0.39), (0.66, 0.49), (0.39, 0.76)]
+    d.polygon([(x * S, y * S) for x, y in liquid], fill=(236, 186, 48, 255))
+    cross_patch(d, int(0.47 * S), int(0.57 * S), int(0.09 * S))
+    return im.resize((size, size), Image.LANCZOS)
 
 
-def ability_icons(size=128):
-    # стабилизация: белый бинт-крест + капля
-    im, d = ability_base(size)
-    draw_cross(im, size // 2, size // 2, size // 3)
-    d.ellipse([size * 0.62, size * 0.62, size * 0.86, size * 0.86], fill=(*RED, 255), outline=(*OUTLINE, 255), width=3)
-    d.line([(size * 0.60, size * 0.74), (size * 0.88, size * 0.74)], fill=(*WHITE, 255), width=4)
-    save(im, UI, "PM_Stabilize.png")
+def ability_icon(kind, size=128):
+    S = size * K
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle([8, 8, S - 9, S - 9], radius=S // 7, fill=(*RED_DARK, 255), outline=(*OUTLINE, 255), width=S // 40)
+    d.rounded_rectangle([S // 14, S // 14, S - S // 14, S // 2], radius=S // 9, fill=(*RED, 255))   # блик сверху
+    d.rounded_rectangle([S // 14, S // 3, S - S // 14, S - S // 14], radius=S // 9, fill=(*RED_DARK, 255))
+    if kind == "stabilize":
+        cross_patch(d, S // 2, int(S * 0.46), int(S * 0.27))
+        # жгут
+        d.rounded_rectangle([int(S * 0.18), int(S * 0.74), int(S * 0.82), int(S * 0.84)], radius=S // 30,
+                            fill=(*WHITE, 255), outline=(*OUTLINE, 255), width=S // 60)
+        d.rectangle([int(S * 0.46), int(S * 0.72), int(S * 0.54), int(S * 0.86)], fill=(*STEEL, 255), outline=(*OUTLINE, 255), width=S // 80)
+    elif kind == "dontshoot":
+        s = S / 128
+        palm = [(44, 110), (38, 64), (45, 59), (52, 74), (51, 28), (60, 26), (62, 68), (64, 20), (73, 20), (73, 68),
+                (77, 28), (86, 30), (83, 76), (92, 54), (100, 58), (88, 98), (80, 110)]
+        d.polygon([(x * s, y * s) for x, y in palm], fill=(*WHITE, 255), outline=(*OUTLINE, 255), width=int(3 * s))
+        cross_patch(d, int(66 * s), int(88 * s), int(11 * s), patch=False)
+    else:
+        syr = syringe_icon(size * K // 2).resize((int(S * 0.82), int(S * 0.82)), Image.LANCZOS)
+        im.alpha_composite(syr, (int(S * 0.09), int(S * 0.09)))
+    return im.resize((size, size), Image.LANCZOS)
 
-    # не стрелять: поднятая ладонь + крест
-    im, d = ability_base(size)
-    s = size / 128
-    palm = [(44, 108), (40, 62), (46, 58), (52, 74), (52, 30), (60, 28), (62, 70), (64, 24), (72, 24), (72, 70),
-            (76, 30), (84, 32), (82, 76), (90, 52), (98, 56), (86, 96), (78, 108)]
-    d.polygon([(x * s, y * s) for x, y in palm], fill=(*WHITE, 255), outline=(*OUTLINE, 255))
-    draw_cross(im, int(66 * s), int(86 * s), int(9 * s))
-    save(im, UI, "PM_DontShoot.png")
 
-    # адреналин: шприц на фоне
-    im, d = ability_base(size)
-    syr = load(os.path.join(OUT, "Item", "PM_AdrenalineSyringe.png")).resize((int(size * 0.8), int(size * 0.8)), Image.LANCZOS)
-    im.alpha_composite(syr, (int(size * 0.1), int(size * 0.1)))
-    save(im, UI, "PM_Adrenaline.png")
-
-
-def preview():
-    """About/Preview.png: название, форма и знак."""
-    from PIL import ImageFont
+def preview(icons):
     W, H = 900, 506
     im = Image.new("RGBA", (W, H), (*RED_DARK, 255))
     d = ImageDraw.Draw(im)
-    for i in range(0, W + H, 60):   # диагональные светоотражающие полосы
-        d.line([(i, 0), (i - H, H)], fill=(*RED, 255), width=26)
-    d.rectangle([0, H - 70, W, H - 52], fill=(*REFLECT, 255))
-    draw_cross(im, 150, 170, 90)
+    for i in range(-H, W + H, 64):
+        d.line([(i, 0), (i - H, H)], fill=(*RED, 255), width=24)
+    d.rectangle([0, H - 86, W, H - 60], fill=(*REFLECT, 255))
+    d.rectangle([0, H - 86, W, H - 82], fill=(*REFLECT_EDGE, 255))
+    d.rectangle([0, H - 64, W, H - 60], fill=(*REFLECT_EDGE, 255))
+    cross_patch(d, 150, 160, 92)
     try:
-        big = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 64)
-        small = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 34)
+        big = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 70)
+        small = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 38)
     except OSError:
         big = small = ImageFont.load_default()
-    d.text((290, 90), "PARAMEDIC", font=big, fill=(*WHITE, 255), stroke_width=4, stroke_fill=(*OUTLINE, 255))
-    d.text((292, 170), "Don't Die Yet!", font=small, fill=(*REFLECT, 255), stroke_width=3, stroke_fill=(*OUTLINE, 255))
-    x = 40
-    for n in ("Beret", "Vest", "Jacket", "Helmet", "Belt", "Goggles"):
-        icon = load(os.path.join(OUT, "Apparel", n, f"PM_{n}.png")).resize((130, 130), Image.LANCZOS)
-        im.alpha_composite(icon, (x, 290))
+    d.text((282, 82), "PARAMEDIC", font=big, fill=(*WHITE, 255), stroke_width=5, stroke_fill=(*OUTLINE, 255))
+    d.text((286, 168), "Don't Die Yet!", font=small, fill=(*REFLECT, 255), stroke_width=4, stroke_fill=(*OUTLINE, 255))
+    x = 36
+    for ic in icons:
+        im.alpha_composite(ic.resize((128, 128), Image.LANCZOS), (x, 292))
         x += 140
     save(im.convert("RGB"), ROOT, "About", "Preview.png")
 
 
+def mod_icon(size=128):
+    """About/ModIcon.png — значок в списке модов."""
+    S = size * K
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse([8, 8, S - 9, S - 9], fill=(*RED, 255), outline=(*OUTLINE, 255), width=S // 30)
+    d.rectangle([0, int(S * 0.62), S, int(S * 0.70)], fill=(*REFLECT, 255))
+    ring = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(ring).ellipse([8 + S // 30, 8 + S // 30, S - 9 - S // 30, S - 9 - S // 30], fill=255)
+    layer = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(layer).rectangle([0, int(S * 0.62), S, int(S * 0.70)], fill=(*REFLECT, 255))
+    im2 = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(im2).ellipse([8, 8, S - 9, S - 9], fill=(*RED, 255), outline=(*OUTLINE, 255), width=S // 30)
+    overlay_clipped(im2, layer, ring)
+    cross_patch(ImageDraw.Draw(im2), S // 2, int(S * 0.42), int(S * 0.24))
+    save(im2.resize((size, size), Image.LANCZOS), ROOT, "About", "ModIcon.png")
+
+
 def main():
-    body_set("Shirt", r"Tops\SuitShirt", "SuitShirt", shirt_painter, shirt_decor)
-    body_set("Vest", r"Armour\PASGT", "PASGT_CC", vest_painter, vest_decor, flat=True)
-    body_set("Jacket", r"Shell\Field_Parka", "ReconJacket", jacket_painter, jacket_decor)
-    body_set("Belt", r"Webbing\Condor_BattleBelt", "Condor_BattleBelt", belt_painter, belt_decor, flat=True)
-    head_set("Beret", r"Headgear\Hats\VDVBeret", "Beret", beret_painter, beret_decor, flat=True)
-    head_set("Helmet", r"Helmet\ACH", "ACH_UCP", helmet_painter, helmet_decor, flat=True)
-    head_set("Goggles", r"Headgear\EyePros", "BallisticGoggles_8X10", goggles_painter, goggles_decor, flat=True)
-    for n in ("Shirt", "Vest", "Jacket", "Belt", "Beret", "Helmet", "Goggles"):
-        icon_from(n)
-    pants_icon()
-    syringe_icon()
-    ability_icons()
-    preview()
+    if not os.path.isdir(VAN):
+        print("нет tools/_vanilla — сначала python tools/extract_vanilla.py")
+        return 1
+    icons = {}
+    for name, maker in (("Shirt", make_shirt), ("Vest", make_vest), ("Jacket", make_jacket), ("Belt", make_belt)):
+        for body in BODIES:
+            for d in DIRS:
+                im = maker(body, d)
+                save(finish(im), OUT, "Apparel", name, f"PM_{name}_{body}_{d}.png")
+                if body == "Male" and d == "south":
+                    icons[name] = icon_from(im)
+        print(name, "ok")
+    for name, maker in (("Helmet", make_helmet), ("Beret", make_beret), ("Goggles", make_goggles)):
+        for d in DIRS:
+            im = maker(d)
+            save(finish(im), OUT, "Apparel", name, f"PM_{name}_{d}.png")
+            if d == "south":
+                icons[name] = icon_from(im)
+        print(name, "ok")
+    icons["Pants"] = icon_from(make_pants_icon())
+    for name, ic in icons.items():
+        save(ic, OUT, "Apparel", name, f"PM_{name}.png")
+    save(syringe_icon(64), OUT, "Item", "PM_AdrenalineSyringe.png")
+    save(ability_icon("stabilize"), UI, "PM_Stabilize.png")
+    save(ability_icon("dontshoot"), UI, "PM_DontShoot.png")
+    save(ability_icon("adrenaline"), UI, "PM_Adrenaline.png")
+    preview([icons[n] for n in ("Beret", "Vest", "Jacket", "Helmet", "Belt", "Goggles")])
+    mod_icon()
     print("ok")
+    return 0
 
 
 if __name__ == "__main__":

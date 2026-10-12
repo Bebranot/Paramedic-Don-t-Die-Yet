@@ -26,6 +26,20 @@ public static class ShoutUtility
         return roll % 1000 < chance * 1000f;
     }
 
+    /// <summary>Рядом с клеткой стоит медик, которого этот враг уважает.</summary>
+    public static bool ProtectedNear(IntVec3 cell, Pawn searcher, float radius)
+    {
+        foreach (Pawn medic in Protected)
+        {
+            if (medic.Spawned && medic.Map == searcher.Map && medic.Position.InHorDistOf(cell, radius)
+                && IsProtectedFrom(medic, searcher))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static float RespectChance(Pawn searcher, Pawn medic)
     {
         if (searcher.InMentalState) return 0f;

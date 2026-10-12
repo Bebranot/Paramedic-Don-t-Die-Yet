@@ -5,3 +5,4 @@ obj/
 Source/**/bin/
 Source/**/obj/
 Assemblies/*.pdb
+tools/_vanilla/

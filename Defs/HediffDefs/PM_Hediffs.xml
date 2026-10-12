@@ -17,35 +17,32 @@
         <minSeverity>1</minSeverity>
         <label>basic</label>
         <statOffsets>
-          <MedicalTendQuality>0.15</MedicalTendQuality>
-          <MedicalTendSpeed>0.20</MedicalTendSpeed>
-          <MedicalSurgerySuccessChance>0.10</MedicalSurgerySuccessChance>
           <ShootingAccuracyPawn>-4</ShootingAccuracyPawn>
         </statOffsets>
         <statFactors>
           <MeleeDamageFactor>0.8</MeleeDamageFactor>
+          <MedicalTendQuality>1.15</MedicalTendQuality>
+          <MedicalTendSpeed>1.20</MedicalTendSpeed>
+          <MedicalSurgerySuccessChance>1.10</MedicalSurgerySuccessChance>
         </statFactors>
       </li>
       <li>
         <minSeverity>2</minSeverity>
         <label>equipped</label>
         <statOffsets>
-          <MedicalTendQuality>0.20</MedicalTendQuality>
-          <MedicalTendSpeed>0.25</MedicalTendSpeed>
-          <MedicalSurgerySuccessChance>0.12</MedicalSurgerySuccessChance>
           <ShootingAccuracyPawn>-4</ShootingAccuracyPawn>
         </statOffsets>
         <statFactors>
           <MeleeDamageFactor>0.8</MeleeDamageFactor>
+          <MedicalTendQuality>1.20</MedicalTendQuality>
+          <MedicalTendSpeed>1.25</MedicalTendSpeed>
+          <MedicalSurgerySuccessChance>1.12</MedicalSurgerySuccessChance>
         </statFactors>
       </li>
       <li>
         <minSeverity>3</minSeverity>
         <label>full kit</label>
         <statOffsets>
-          <MedicalTendQuality>0.25</MedicalTendQuality>
-          <MedicalTendSpeed>0.30</MedicalTendSpeed>
-          <MedicalSurgerySuccessChance>0.15</MedicalSurgerySuccessChance>
           <ShootingAccuracyPawn>-4</ShootingAccuracyPawn>
           <ArmorRating_Sharp>0.08</ArmorRating_Sharp>
           <ArmorRating_Blunt>0.08</ArmorRating_Blunt>
@@ -53,6 +50,9 @@
         </statOffsets>
         <statFactors>
           <MeleeDamageFactor>0.8</MeleeDamageFactor>
+          <MedicalTendQuality>1.25</MedicalTendQuality>
+          <MedicalTendSpeed>1.30</MedicalTendSpeed>
+          <MedicalSurgerySuccessChance>1.15</MedicalSurgerySuccessChance>
         </statFactors>
       </li>
     </stages>
@@ -77,22 +77,22 @@
       <li>
         <minSeverity>1</minSeverity>
         <label>paramedic</label>
-        <statOffsets><MedicalTendQuality>0.05</MedicalTendQuality></statOffsets>
+        <statFactors><MedicalTendQuality>1.05</MedicalTendQuality></statFactors>
       </li>
       <li>
         <minSeverity>2</minSeverity>
         <label>senior paramedic</label>
-        <statOffsets><MedicalTendQuality>0.05</MedicalTendQuality></statOffsets>
+        <statFactors><MedicalTendQuality>1.05</MedicalTendQuality></statFactors>
       </li>
       <li>
         <minSeverity>3</minSeverity>
         <label>rescue veteran</label>
-        <statOffsets><MedicalTendQuality>0.10</MedicalTendQuality></statOffsets>
+        <statFactors><MedicalTendQuality>1.10</MedicalTendQuality></statFactors>
       </li>
       <li>
         <minSeverity>4</minSeverity>
         <label>legend</label>
-        <statOffsets><MedicalTendQuality>0.10</MedicalTendQuality></statOffsets>
+        <statFactors><MedicalTendQuality>1.10</MedicalTendQuality></statFactors>
       </li>
     </stages>
   </HediffDef>

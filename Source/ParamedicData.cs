@@ -65,7 +65,11 @@ public class GameComponent_Paramedic : GameComponent
     private List<Pawn> tmpPawns; private List<ParamedicRecord> tmpRecords;
     private List<Faction> tmpFactions; private List<int> tmpTicks;
 
-    public GameComponent_Paramedic(Game game) { Instance = this; }
+    public GameComponent_Paramedic(Game game)
+    {
+        Instance = this;
+        ShoutUtility.Protected.Clear(); // статика переживает смену игры — пешки старой игры не нужны
+    }
 
     public ParamedicRecord Get(Pawn pawn, bool create = true)
     {
@@ -160,6 +164,13 @@ public class GameComponent_Paramedic : GameComponent
 
     public override void ExposeData()
     {
+        if (Scribe.mode == LoadSaveMode.Saving)
+        {
+            // удалённые игрой пешки не сохраняем — иначе при загрузке будут «не найдена ссылка»
+            records.RemoveAll(kv => kv.Key == null || kv.Key.Discarded);
+            pending.RemoveAll(p => p.patient == null || p.doctor == null || p.patient.Discarded || p.doctor.Discarded);
+            humanitarianPatients.RemoveWhere(p => p == null || p.Discarded || p.Dead);
+        }
         Scribe_Collections.Look(ref records, "records", LookMode.Reference, LookMode.Deep, ref tmpPawns, ref tmpRecords);
         Scribe_Collections.Look(ref pending, "pending", LookMode.Deep);
         Scribe_Collections.Look(ref humanitarianPatients, "humanitarianPatients", LookMode.Reference);

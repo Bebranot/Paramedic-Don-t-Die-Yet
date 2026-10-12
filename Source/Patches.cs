@@ -42,11 +42,15 @@ public static class Thing_TakeDamage_Patch
     {
         __state = -1;
         if (__instance is Pawn victim && dinfo.Instigator is Pawn attacker && attacker != victim
-            && attacker.RaceProps.Humanlike && ParamedicUtility.CountsAsHuman(victim))
+            && attacker.RaceProps.Humanlike && ParamedicUtility.CountsAsHuman(victim) && IsSworn(attacker))
         {
             __state = victim.health.hediffSet.GetMissingPartsCommonAncestors().Count;
         }
     }
+
+    /// <summary>Клятва касается пешки: на смене или уже давала клятву.</summary>
+    private static bool IsSworn(Pawn p) =>
+        ParamedicUtility.IsOnDuty(p) || GameComponent_Paramedic.Instance?.Get(p, create: false)?.OathTaken == true;
 
     public static void Postfix(Thing __instance, DamageInfo dinfo, DamageWorker.DamageResult __result, int __state)
     {
@@ -55,8 +59,6 @@ public static class Thing_TakeDamage_Patch
         var comp = GameComponent_Paramedic.Instance;
         if (comp == null) return;
 
-        bool relevant = ParamedicUtility.IsOnDuty(attacker) || comp.Get(attacker, create: false)?.OathTaken == true;
-        if (!relevant) return;
         comp.lastHarm[victim] = (attacker, Find.TickManager.TicksGame);
         if (victim.Dead) return; // смерть посчитает Pawn.Kill
 
@@ -145,12 +147,22 @@ public static class Verb_TryStartCastOn_Patch
     {
         if (ShoutUtility.Protected.Count == 0 || __instance is Verb_CastAbility) return true;
         Pawn caster = __instance.CasterPawn;
-        if (caster == null || castTarg.Thing == null) return true;
+        if (caster == null) return true;
+        if (castTarg.Thing == null)
+        {
+            // огонь по клетке (подавление у CAI 5000): не по позиции защищённого медика
+            if (castTarg.IsValid && ShoutUtility.ProtectedNear(castTarg.Cell, caster, 1.9f))
+            {
+                if (SelfTestComponent.Enabled) SelfTestComponent.BlockedShots++;
+                return false;
+            }
+            return true;
+        }
 
         // Медик под защитой: автоатаки (самооборона, огонь с места) подавляются,
         // а атака по приказу игрока снимает защиту — это вероломство
         if (ShoutUtility.Protected.Contains(caster) && castTarg.Thing != caster
-            && (castTarg.Thing is Pawn || castTarg.Thing.HostileTo(caster)))
+            && (castTarg.Thing is Pawn { RaceProps.Humanlike: true } || castTarg.Thing.HostileTo(caster)))
         {
             if (caster.CurJob == null || !caster.CurJob.playerForced) return false;
             Hediff h = caster.health.hediffSet.GetFirstHediffOfDef(PM_DefOf.PM_ShoutProtection);
