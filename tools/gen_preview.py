@@ -216,7 +216,25 @@ def scene(shout):
     return im.convert("RGB")
 
 
+def export_assets(out_dir):
+    """Персонажи для обложки в Remotion (cover/public): медик крупно и раненый с бинтом."""
+    os.makedirs(out_dir, exist_ok=True)
+    custom = {"Beret": plain(gen_textures.make_beret, "south"), "Belt": plain(gen_textures.make_belt, "Male", "south")}
+    pawn("south", 1024, ["Shirt", "Vest", "Belt"], hat="Beret", goggles=True, body="Male", custom=custom).save(
+        os.path.join(out_dir, "medic.png"))
+    w = pawn("south", 640, [], body="Male", shirt_color=(70, 110, 170))
+    d = ImageDraw.Draw(w)
+    cx, top = w.width // 2, int(640 * 0.45)
+    d.rounded_rectangle([cx - 150, top + 250, cx + 150, top + 300], radius=14, fill=(*WHITE, 255), outline=(*OUTLINE, 255), width=8)
+    d.ellipse([cx - 22, top + 258, cx + 22, top + 292], fill=(170, 30, 30, 255))
+    w.rotate(90, expand=True, resample=Image.BICUBIC).save(os.path.join(out_dir, "wounded.png"))
+    print("assets ->", out_dir)
+
+
 def main():
+    if len(sys.argv) > 2 and sys.argv[1] == "--assets":
+        export_assets(sys.argv[2])
+        return 0
     with_shout = scene(True)
     with_shout.save(os.path.join(ROOT, "About", "Preview.png"), optimize=True)
     scene(False).save(os.path.join(ROOT, "docs", "Preview_noshout.png"), optimize=True)

@@ -28,3 +28,6 @@ powershell -ExecutionPolicy Bypass -File tools\make_release.ps1
 - Красного креста нет нигде (эмблема — зелёный крест, см. QUESTIONS #21).
 - В текстурах нет чужих модов (с 2026-10-12 — только ванильные основы и своё).
 - Ключи автотестов (`-pmselftest`, `-pmshot`) в обычной игре ничего не делают.
+
+## �������
+`tools/gen_preview.py --assets cover/public` (���������), ����� � `cover/`: `npm i`, `npx remotion still Cover ../About/Preview.png` � `npx remotion still CoverNoShout ../docs/Preview_noshout.png`; ��������� PNG ��� ������ (Steam: �� 1 ��). ������ � Studio: `npx remotion studio`.
