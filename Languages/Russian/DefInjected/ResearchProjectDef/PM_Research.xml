@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <PM_FieldMedicine.label>полевая медицина</PM_FieldMedicine.label>
+  <PM_FieldMedicine.description>Создать спасательную службу: форма парамедика (рубашка, штаны, жилет, берет) и клятва, которая к ней прилагается.</PM_FieldMedicine.description>
+
+  <PM_RescueGear.label>спасательное снаряжение</PM_RescueGear.label>
+  <PM_RescueGear.description>Тяжёлое снаряжение спасателей: огнестойкая куртка, каска парамедика, разгрузка для медикаментов и шприцы адреналина.</PM_RescueGear.description>
+
+  <PM_TacticalMedicine.label>тактическая медицина</PM_TacticalMedicine.label>
+  <PM_TacticalMedicine.description>Очки-тепловизор, в которых раненых видно сквозь дым и темноту.</PM_TacticalMedicine.description>
+
+</LanguageData>

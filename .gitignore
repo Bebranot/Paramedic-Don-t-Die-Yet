@@ -4,3 +4,4 @@ obj/
 .vs/
 Source/**/bin/
 Source/**/obj/
+Assemblies/*.pdb

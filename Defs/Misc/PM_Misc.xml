@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <RecordDef>
+    <defName>PM_LivesSaved</defName>
+    <label>lives saved</label>
+    <description>Number of downed or bleeding people this pawn treated as a paramedic who were still alive a day later.</description>
+    <type>Int</type>
+  </RecordDef>
+
+  <HistoryEventDef>
+    <defName>PM_HumanitarianAid</defName>
+    <label>humanitarian aid</label>
+  </HistoryEventDef>
+
+  <HistoryEventDef>
+    <defName>PM_PerfidyEvent</defName>
+    <label>perfidy</label>
+  </HistoryEventDef>
+
+  <InventoryStockGroupDef>
+    <defName>PM_AdrenalineStock</defName>
+    <thingDefs>
+      <li>PM_AdrenalineSyringe</li>
+    </thingDefs>
+    <defaultThingDef>PM_AdrenalineSyringe</defaultThingDef>
+    <max>3</max>
+  </InventoryStockGroupDef>
+
+</Defs>

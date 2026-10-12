@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <PM_Apparel_Shirt.label>рубашка парамедика</PM_Apparel_Shirt.label>
+  <PM_Apparel_Shirt.description>Красно-белое поло со светоотражающими вставками на плечах. Дышит, отстирывается и хорошо видно в дыму.\n\nЧасть формы парамедика. С остальными вещами комплекта даёт дополнительные бонусы.</PM_Apparel_Shirt.description>
+
+  <PM_Apparel_Pants.label>штаны парамедика</PM_Apparel_Pants.label>
+  <PM_Apparel_Pants.description>Карго со вшитыми наколенниками и глубокими карманами под бинты. Весь день стоять на коленях возле раненых в них проще.\n\nЧасть формы парамедика. Чуть быстрее, когда несёшь раненого.</PM_Apparel_Pants.description>
+
+  <PM_Apparel_Vest.label>жилет парамедика</PM_Apparel_Vest.label>
+  <PM_Apparel_Vest.description>Стандартный жилет спасателей окраинных миров: лёгкие баллистические пластины, светоотражающие полосы и зелёный крест на спине. Говорят, рейдеры иногда не стреляют в того, кто его носит. Говорят многое.\n\nЯдро формы парамедика. Вместе с беретом или каской парамедика пешка заступает на смену. В кармане — три медикамента под рукой.</PM_Apparel_Vest.description>
+
+  <PM_Apparel_Jacket.label>куртка спасателя</PM_Apparel_Jacket.label>
+  <PM_Apparel_Jacket.description>Огнестойкая куртка спасателя с подкладкой из пласталевой ткани и широкими светоотражающими полосами. Сшита, чтобы вытаскивать людей из горящих зданий — и не терять при этом голову.\n\nЧасть формы парамедика. Почти не горит; на смене владельца не выбивает из колеи вид смерти.</PM_Apparel_Jacket.description>
+
+  <PM_Apparel_Beret.label>берет парамедика</PM_Apparel_Beret.label>
+  <PM_Apparel_Beret.description>Красный берет с нашивкой зелёного креста. Ни от чего не защищает, зато все знают, кого звать.\n\nЯдро формы парамедика. Вместе с жилетом парамедика пешка заступает на смену.</PM_Apparel_Beret.description>
+
+  <PM_Apparel_Helmet.label>каска парамедика</PM_Apparel_Helmet.label>
+  <PM_Apparel_Helmet.description>Белая боевая каска с красной полосой и зелёным крестом. На случай, когда берета мало.\n\nЯдро формы парамедика, заменяет берет.</PM_Apparel_Helmet.description>
+
+  <PM_Apparel_Goggles.label>очки-тепловизор</PM_Apparel_Goggles.label>
+  <PM_Apparel_Goggles.description>Тепловизионные очки, настроенные на тепло тела. В дыму, темноте и под завалами раненые светятся, как фонари.\n\nЧасть формы парамедика. Повышает качество лечения.</PM_Apparel_Goggles.description>
+
+  <PM_Apparel_Belt.label>разгрузка парамедика</PM_Apparel_Belt.label>
+  <PM_Apparel_Belt.description>Кожаная разгрузка с подсумками для медикаментов и кобурой для инжектора. Парамедик носит вдвое больше медикаментов и может делать укол адреналина.\n\nЧасть формы парамедика.</PM_Apparel_Belt.description>
+
+  <PM_AdrenalineSyringe.label>шприц адреналина</PM_AdrenalineSyringe.label>
+  <PM_AdrenalineSyringe.description>Одноразовый автоинъектор боевого адреналина. Парамедик с разгрузкой может вколоть его упавшему союзнику: тот встанет на полминуты — как раз доползти до укрытия — и снова упадёт, уже с отходняком.</PM_AdrenalineSyringe.description>
+
+</LanguageData>

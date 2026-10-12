@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Общая база формы: без материала (цвет зашит в текстуру), только взрослые -->
+  <ThingDef Name="PM_ApparelBase" ParentName="ApparelMakeableBase" Abstract="True">
+    <techLevel>Industrial</techLevel>
+    <recipeMaker>
+      <recipeUsers Inherit="False">
+        <li>ElectricTailoringBench</li>
+        <li>HandTailoringBench</li>
+      </recipeUsers>
+      <displayPriority>900</displayPriority>
+    </recipeMaker>
+    <thingCategories>
+      <li>Apparel</li>
+    </thingCategories>
+    <tradeTags>
+      <li>Clothing</li>
+    </tradeTags>
+    <apparel>
+      <developmentalStageFilter>Adult</developmentalStageFilter>
+      <canBeGeneratedToSatisfyWarmth>false</canBeGeneratedToSatisfyWarmth>
+      <canBeGeneratedToSatisfyToxicEnvironmentResistance>false</canBeGeneratedToSatisfyToxicEnvironmentResistance>
+      <defaultOutfitTags>
+        <li>Worker</li>
+      </defaultOutfitTags>
+    </apparel>
+  </ThingDef>
+
+  <!-- ======================= Рубашка ======================= -->
+  <ThingDef ParentName="PM_ApparelBase">
+    <defName>PM_Apparel_Shirt</defName>
+    <label>paramedic shirt</label>
+    <description>A red-and-white polo with reflective inserts on the shoulders. Breathable, washable and easy to spot in the smoke.\n\nPart of the paramedic uniform. Wear it with the rest of the kit for extra bonuses.</description>
+    <recipeMaker>
+      <researchPrerequisite>PM_FieldMedicine</researchPrerequisite>
+      <skillRequirements><Crafting>3</Crafting></skillRequirements>
+    </recipeMaker>
+    <graphicData>
+      <texPath>Things/Paramedic/Apparel/Shirt/PM_Shirt</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.9</drawSize>
+    </graphicData>
+    <costList>
+      <Cloth>40</Cloth>
+    </costList>
+    <statBases>
+      <WorkToMake>3000</WorkToMake>
+      <MaxHitPoints>100</MaxHitPoints>
+      <Mass>0.3</Mass>
+      <Flammability>1.0</Flammability>
+      <Insulation_Cold>3</Insulation_Cold>
+      <Insulation_Heat>2</Insulation_Heat>
+      <EquipDelay>1.5</EquipDelay>
+    </statBases>
+    <equippedStatOffsets>
+      <MedicalTendSpeed>0.05</MedicalTendSpeed>
+      <MedicalTendQuality>0.02</MedicalTendQuality>
+    </equippedStatOffsets>
+    <apparel>
+      <bodyPartGroups>
+        <li>Torso</li>
+        <li>Neck</li>
+        <li>Shoulders</li>
+        <li>Arms</li>
+      </bodyPartGroups>
+      <wornGraphicPath>Things/Paramedic/Apparel/Shirt/PM_Shirt</wornGraphicPath>
+      <layers>
+        <li>OnSkin</li>
+      </layers>
+    </apparel>
+    <comps>
+      <li Class="Paramedic.CompProperties_ParamedicGear"><slot>Shirt</slot></li>
+    </comps>
+  </ThingDef>
+
+  <!-- ======================= Штаны ======================= -->
+  <ThingDef ParentName="PM_ApparelBase">
+    <defName>PM_Apparel_Pants</defName>
+    <label>paramedic pants</label>
+    <description>Cargo pants with sewn-in knee pads and deep pockets for gauze. Kneeling over the wounded all day is easier in these.\n\nPart of the paramedic uniform. Slightly faster when carrying the wounded.</description>
+    <recipeMaker>
+      <researchPrerequisite>PM_FieldMedicine</researchPrerequisite>
+      <skillRequirements><Crafting>3</Crafting></skillRequirements>
+    </recipeMaker>
+    <graphicData>
+      <texPath>Things/Paramedic/Apparel/Pants/PM_Pants</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.9</drawSize>
+    </graphicData>
+    <costList>
+      <Cloth>50</Cloth>
+      <Steel>10</Steel>
+    </costList>
+    <statBases>
+      <WorkToMake>3500</WorkToMake>
+      <MaxHitPoints>120</MaxHitPoints>
+      <Mass>0.6</Mass>
+      <Flammability>1.0</Flammability>
+      <ArmorRating_Sharp>0.05</ArmorRating_Sharp>
+      <ArmorRating_Blunt>0.05</ArmorRating_Blunt>
+      <Insulation_Cold>3</Insulation_Cold>
+      <Insulation_Heat>1</Insulation_Heat>
+      <EquipDelay>2</EquipDelay>
+    </statBases>
+    <apparel>
+      <bodyPartGroups>
+        <li>Legs</li>
+      </bodyPartGroups>
+      <layers>
+        <li>OnSkin</li>
+      </layers>
+    </apparel>
+    <comps>
+      <li Class="Paramedic.CompProperties_ParamedicGear"><slot>Pants</slot></li>
+    </comps>
+  </ThingDef>
+
+  <!-- ======================= Жилет (ядро) ======================= -->
+  <ThingDef ParentName="PM_ApparelBase">
+    <defName>PM_Apparel_Vest</defName>
+    <label>paramedic vest</label>
+    <description>The standard-issue vest of rimworld rescue crews: light ballistic panels, reflective stripes and a green cross on the back. Rumor has it raiders sometimes hold their fire at whoever wears it. Rumors say a lot of things.\n\nCore of the paramedic uniform. Together with the paramedic beret or helmet, the wearer goes on duty. A pocket keeps three medicines at hand.</description>
+    <recipeMaker>
+      <researchPrerequisite>PM_FieldMedicine</researchPrerequisite>
+      <skillRequirements><Crafting>5</Crafting></skillRequirements>
+    </recipeMaker>
+    <graphicData>
+      <texPath>Things/Paramedic/Apparel/Vest/PM_Vest</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.9</drawSize>
+    </graphicData>
+    <costList>
+      <Synthread>60</Synthread>
+      <Steel>20</Steel>
+      <ComponentIndustrial>2</ComponentIndustrial>
+      <MedicineIndustrial>1</MedicineIndustrial>
+    </costList>
+    <statBases>
+      <WorkToMake>9000</WorkToMake>
+      <MaxHitPoints>160</MaxHitPoints>
+      <Mass>2.5</Mass>
+      <Flammability>0.6</Flammability>
+      <ArmorRating_Sharp>0.45</ArmorRating_Sharp>
+      <ArmorRating_Blunt>0.15</ArmorRating_Blunt>
+      <ArmorRating_Heat>0.15</ArmorRating_Heat>
+      <Insulation_Cold>2</Insulation_Cold>
+      <EquipDelay>3</EquipDelay>
+    </statBases>
+    <equippedStatOffsets>
+      <MedicalTendSpeed>0.05</MedicalTendSpeed>
+    </equippedStatOffsets>
+    <apparel>
+      <bodyPartGroups>
+        <li>Torso</li>
+        <li>Neck</li>
+        <li>Shoulders</li>
+      </bodyPartGroups>
+      <wornGraphicPath>Things/Paramedic/Apparel/Vest/PM_Vest</wornGraphicPath>
+      <layers>
+        <li>Middle</li>
+      </layers>
+    </apparel>
+    <tradeTags>
+      <li>Armor</li>
+    </tradeTags>
+    <comps>
+      <li Class="Paramedic.CompProperties_ParamedicGear"><slot>Vest</slot></li>
+    </comps>
+  </ThingDef>
+
+  <!-- ======================= Куртка спасателя ======================= -->
+  <ThingDef ParentName="PM_ApparelBase">
+    <defName>PM_Apparel_Jacket</defName>
+    <label>rescue jacket</label>
+    <description>A fire-resistant rescue jacket with plasteel-weave lining and wide reflective bands. Built for pulling people out of burning buildings - and keeping your nerve while doing it.\n\nPart of the paramedic uniform. Barely catches fire; on duty, the wearer is not shaken by seeing death.</description>
+    <recipeMaker>
+      <researchPrerequisite>PM_RescueGear</researchPrerequisite>
+      <skillRequirements><Crafting>7</Crafting></skillRequirements>
+      <recipeUsers Inherit="False">
+        <li>ElectricTailoringBench</li>
+      </recipeUsers>
+    </recipeMaker>
+    <graphicData>
+      <texPath>Things/Paramedic/Apparel/Jacket/PM_Jacket</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.9</drawSize>
+    </graphicData>
+    <costList>
+      <Synthread>80</Synthread>
+      <Plasteel>30</Plasteel>
+      <ComponentIndustrial>3</ComponentIndustrial>
+    </costList>
+    <statBases>
+      <WorkToMake>16000</WorkToMake>
+      <MaxHitPoints>220</MaxHitPoints>
+      <Mass>3</Mass>
+      <Flammability>0.2</Flammability>
+      <ArmorRating_Sharp>0.40</ArmorRating_Sharp>
+      <ArmorRating_Blunt>0.15</ArmorRating_Blunt>
+      <ArmorRating_Heat>0.55</ArmorRating_Heat>
+      <Insulation_Cold>14</Insulation_Cold>
+      <Insulation_Heat>6</Insulation_Heat>
+      <EquipDelay>3</EquipDelay>
+    </statBases>
+    <apparel>
+      <bodyPartGroups>
+        <li>Torso</li>
+        <li>Neck</li>
+        <li>Shoulders</li>
+        <li>Arms</li>
+      </bodyPartGroups>
+      <wornGraphicPath>Things/Paramedic/Apparel/Jacket/PM_Jacket</wornGraphicPath>
+      <layers>
+        <li>Shell</li>
+      </layers>
+    </apparel>
+    <tradeTags>
+      <li>Armor</li>
+    </tradeTags>
+    <comps>
+      <li Class="Paramedic.CompProperties_ParamedicGear"><slot>Jacket</slot></li>
+    </comps>
+  </ThingDef>
+
+  <!-- ======================= Берет (ядро) ======================= -->
+  <ThingDef ParentName="PM_ApparelBase">
+    <defName>PM_Apparel_Beret</defName>
+    <label>paramedic beret</label>
+    <description>A red beret with a green cross badge. Protects nothing, but everyone knows who to call.\n\nCore of the paramedic uniform. Together with the paramedic vest, the wearer goes on duty.</description>
+    <recipeMaker>
+      <researchPrerequisite>PM_FieldMedicine</researchPrerequisite>
+      <skillRequirements><Crafting>3</Crafting></skillRequirements>
+    </recipeMaker>
+    <graphicData>
+      <texPath>Things/Paramedic/Apparel/Beret/PM_Beret</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.7</drawSize>
+    </graphicData>
+    <costList>
+      <Cloth>25</Cloth>
+    </costList>
+    <statBases>
+      <WorkToMake>1500</WorkToMake>
+      <MaxHitPoints>80</MaxHitPoints>
+      <Mass>0.1</Mass>
+      <ArmorRating_Sharp>0.05</ArmorRating_Sharp>
+      <ArmorRating_Blunt>0.03</ArmorRating_Blunt>
+      <Insulation_Cold>1</Insulation_Cold>
+      <EquipDelay>0.8</EquipDelay>
+    </statBases>
+    <equippedStatOffsets>
+      <SocialImpact>0.05</SocialImpact>
+    </equippedStatOffsets>
+    <apparel>
+      <countsAsClothingForNudity>false</countsAsClothingForNudity>
+      <bodyPartGroups>
+        <li>UpperHead</li>
+      </bodyPartGroups>
+      <wornGraphicPath>Things/Paramedic/Apparel/Beret/PM_Beret</wornGraphicPath>
+      <parentTagDef>ApparelHead</parentTagDef>
+      <layers>
+        <li>Overhead</li>
+      </layers>
+    </apparel>
+    <comps>
+      <li Class="Paramedic.CompProperties_ParamedicGear"><slot>Head</slot></li>
+    </comps>
+  </ThingDef>
+
+  <!-- ======================= Каска (ядро, боевая альтернатива берету) ======================= -->
+  <ThingDef ParentName="PM_ApparelBase">
+    <defName>PM_Apparel_Helmet</defName>
+    <label>paramedic helmet</label>
+    <description>A white combat helmet with a red band and a green cross. For when the beret is not enough.\n\nCore of the paramedic uniform, interchangeable with the beret.</description>
+    <recipeMaker>
+      <researchPrerequisite>PM_RescueGear</researchPrerequisite>
+      <skillRequirements><Crafting>5</Crafting></skillRequirements>
+      <recipeUsers Inherit="False">
+        <li>TableMachining</li>
+      </recipeUsers>
+      <effectWorking>Smith</effectWorking>
+      <soundWorking>Recipe_Machining</soundWorking>
+      <unfinishedThingDef>UnfinishedTechArmor</unfinishedThingDef>
+    </recipeMaker>
+    <graphicData>
+      <texPath>Things/Paramedic/Apparel/Helmet/PM_Helmet</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.8</drawSize>
+    </graphicData>
+    <costList>
+      <Steel>40</Steel>
+      <Plasteel>15</Plasteel>
+      <ComponentIndustrial>1</ComponentIndustrial>
+    </costList>
+    <statBases>
+      <WorkToMake>7000</WorkToMake>
+      <MaxHitPoints>140</MaxHitPoints>
+      <Mass>1.5</Mass>
+      <Flammability>0.4</Flammability>
+      <ArmorRating_Sharp>0.55</ArmorRating_Sharp>
+      <ArmorRating_Blunt>0.20</ArmorRating_Blunt>
+      <ArmorRating_Heat>0.25</ArmorRating_Heat>
+      <Insulation_Cold>2</Insulation_Cold>
+      <EquipDelay>1.5</EquipDelay>
+    </statBases>
+    <apparel>
+      <bodyPartGroups>
+        <li>UpperHead</li>
+      </bodyPartGroups>
+      <wornGraphicPath>Things/Paramedic/Apparel/Helmet/PM_Helmet</wornGraphicPath>
+      <parentTagDef>ApparelHead</parentTagDef>
+      <layers>
+        <li>Overhead</li>
+      </layers>
+    </apparel>
+    <tradeTags>
+      <li>Armor</li>
+    </tradeTags>
+    <comps>
+      <li Class="Paramedic.CompProperties_ParamedicGear"><slot>Head</slot></li>
+    </comps>
+  </ThingDef>
+
+  <!-- ======================= Очки-тепловизор ======================= -->
+  <ThingDef ParentName="PM_ApparelBase">
+    <defName>PM_Apparel_Goggles</defName>
+    <label>thermal triage goggles</label>
+    <description>Thermal goggles tuned to body heat. In smoke, darkness or rubble, the wounded glow like lanterns.\n\nPart of the paramedic uniform. Improves tend quality.</description>
+    <recipeMaker>
+      <researchPrerequisite>PM_TacticalMedicine</researchPrerequisite>
+      <skillRequirements><Crafting>8</Crafting></skillRequirements>
+      <recipeUsers Inherit="False">
+        <li>FabricationBench</li>
+      </recipeUsers>
+      <effectWorking>Smith</effectWorking>
+      <soundWorking>Recipe_Machining</soundWorking>
+      <unfinishedThingDef>UnfinishedTechArmor</unfinishedThingDef>
+    </recipeMaker>
+    <graphicData>
+      <texPath>Things/Paramedic/Apparel/Goggles/PM_Goggles</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.7</drawSize>
+    </graphicData>
+    <costList>
+      <Plasteel>20</Plasteel>
+      <ComponentIndustrial>2</ComponentIndustrial>
+      <ComponentSpacer>1</ComponentSpacer>
+    </costList>
+    <statBases>
+      <WorkToMake>12000</WorkToMake>
+      <MaxHitPoints>60</MaxHitPoints>
+      <Mass>0.3</Mass>
+      <EquipDelay>1</EquipDelay>
+    </statBases>
+    <equippedStatOffsets>
+      <MedicalTendQuality>0.05</MedicalTendQuality>
+    </equippedStatOffsets>
+    <apparel>
+      <countsAsClothingForNudity>false</countsAsClothingForNudity>
+      <bodyPartGroups>
+        <li>Eyes</li>
+      </bodyPartGroups>
+      <wornGraphicPath>Things/Paramedic/Apparel/Goggles/PM_Goggles</wornGraphicPath>
+      <layers>
+        <li>EyeCover</li>
+      </layers>
+    </apparel>
+    <tradeTags>
+      <li>ExoticMisc</li>
+    </tradeTags>
+    <comps>
+      <li Class="Paramedic.CompProperties_ParamedicGear"><slot>Goggles</slot></li>
+    </comps>
+  </ThingDef>
+
+  <!-- ======================= Разгрузка ======================= -->
+  <ThingDef ParentName="PM_ApparelBase">
+    <defName>PM_Apparel_Belt</defName>
+    <label>paramedic rig</label>
+    <description>A leather rig with medicine pouches and an injector holster. Doubles the medicine a paramedic carries and enables the adrenaline shot.\n\nPart of the paramedic uniform.</description>
+    <recipeMaker>
+      <researchPrerequisite>PM_RescueGear</researchPrerequisite>
+      <skillRequirements><Crafting>4</Crafting></skillRequirements>
+    </recipeMaker>
+    <graphicData>
+      <texPath>Things/Paramedic/Apparel/Belt/PM_Belt</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.8</drawSize>
+    </graphicData>
+    <costList>
+      <Leather_Plain>30</Leather_Plain>
+      <ComponentIndustrial>2</ComponentIndustrial>
+    </costList>
+    <statBases>
+      <WorkToMake>4000</WorkToMake>
+      <MaxHitPoints>100</MaxHitPoints>
+      <Mass>1</Mass>
+      <EquipDelay>2</EquipDelay>
+    </statBases>
+    <apparel>
+      <countsAsClothingForNudity>false</countsAsClothingForNudity>
+      <bodyPartGroups>
+        <li>Waist</li>
+      </bodyPartGroups>
+      <wornGraphicPath>Things/Paramedic/Apparel/Belt/PM_Belt</wornGraphicPath>
+      <wornGraphicData />
+      <layers>
+        <li>Belt</li>
+      </layers>
+    </apparel>
+    <comps>
+      <li Class="Paramedic.CompProperties_ParamedicGear"><slot>Belt</slot></li>
+    </comps>
+  </ThingDef>
+
+</Defs>

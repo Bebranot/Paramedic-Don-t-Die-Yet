@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+
+  <!-- Переноска раненого быстрее на смене -->
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/StatDef[defName="MoveSpeed"]/parts</xpath>
+    <value>
+      <li Class="Paramedic.StatPart_ParamedicCarrying" />
+    </value>
+  </Operation>
+
+  <!-- «Стальные нервы»: не расстраивается от вида смерти (у части мыслей список уже есть — Anomaly) -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThoughtDef[defName="WitnessedDeathAlly"]/nullifyingHediffs</xpath>
+    <match Class="PatchOperationAdd">
+      <xpath>Defs/ThoughtDef[defName="WitnessedDeathAlly"]/nullifyingHediffs</xpath>
+      <value><li>PM_SteadyNerves</li></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThoughtDef[defName="WitnessedDeathAlly"]</xpath>
+      <value><nullifyingHediffs><li>PM_SteadyNerves</li></nullifyingHediffs></value>
+    </nomatch>
+  </Operation>
+
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThoughtDef[defName="WitnessedDeathNonAlly"]/nullifyingHediffs</xpath>
+    <match Class="PatchOperationAdd">
+      <xpath>Defs/ThoughtDef[defName="WitnessedDeathNonAlly"]/nullifyingHediffs</xpath>
+      <value><li>PM_SteadyNerves</li></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThoughtDef[defName="WitnessedDeathNonAlly"]</xpath>
+      <value><nullifyingHediffs><li>PM_SteadyNerves</li></nullifyingHediffs></value>
+    </nomatch>
+  </Operation>
+
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThoughtDef[defName="ObservedLayingCorpse"]/nullifyingHediffs</xpath>
+    <match Class="PatchOperationAdd">
+      <xpath>Defs/ThoughtDef[defName="ObservedLayingCorpse"]/nullifyingHediffs</xpath>
+      <value><li>PM_SteadyNerves</li></value>
+    </match>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/ThoughtDef[defName="ObservedLayingCorpse"]</xpath>
+      <value><nullifyingHediffs><li>PM_SteadyNerves</li></nullifyingHediffs></value>
+    </nomatch>
+  </Operation>
+
+</Patch>

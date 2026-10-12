@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <!-- Настройки -->
+  <PM_Set_OathStrength>Сила дебафа клятвы: {0}</PM_Set_OathStrength>
+  <PM_Set_ShoutHours>Длительность «Не стрелять!»: {0} ч</PM_Set_ShoutHours>
+  <PM_Set_ShoutRespect>Шанс, что враги послушают крик: {0}</PM_Set_ShoutRespect>
+  <PM_Set_Cooldown>Перезарядка способностей: {0}</PM_Set_Cooldown>
+  <PM_Set_Crisis>Кризис веры после 3 нарушений клятвы за 15 дней</PM_Set_Crisis>
+  <PM_Set_Burnout>Выгорание, если умирает много пациентов</PM_Set_Burnout>
+  <PM_Set_Humanitarian>Отношения за лечение и отпуск врагов</PM_Set_Humanitarian>
+  <PM_Set_AutoDoctor>Ставить «Доктор» = 1 при заступлении на смену</PM_Set_AutoDoctor>
+  <PM_Set_AutoDoctor_Desc>Срабатывает, только когда пешка надевает жилет и берет/каску.</PM_Set_AutoDoctor_Desc>
+  <PM_Set_Reset>Сбросить по умолчанию</PM_Set_Reset>
+
+  <!-- Форма -->
+  <PM_GearCore>Форма парамедика: ядро (жилет + берет/каска = на смене)</PM_GearCore>
+  <PM_GearExtra>Форма парамедика: дополнение</PM_GearExtra>
+  <PM_StatCarrying>Парамедик несёт раненого</PM_StatCarrying>
+
+  <!-- Клятва -->
+  <PM_RankUp>{PAWN_nameDef} теперь — {RANK}.</PM_RankUp>
+  <PM_CrisisLabel>Кризис веры</PM_CrisisLabel>
+  <PM_CrisisText>{PAWN_nameDef} слишком часто нарушал(а) клятву парамедика и сорвал(а) с себя форму. Сутки {PAWN_pronoun} отказывается её надевать.</PM_CrisisText>
+  <PM_PerfidyMsg>{PAWN_nameDef} атаковал(а), прикрываясь крестом. Вероломство — 15 дней никто не поверит крику.</PM_PerfidyMsg>
+  <PM_BurnoutBreak>выгорание</PM_BurnoutBreak>
+  <PM_OathForbids>Клятва парамедика запрещает это</PM_OathForbids>
+  <PM_CrisisCantWear>Кризис веры: отказывается надевать форму парамедика</PM_CrisisCantWear>
+  <PM_AdultsOnly>Форму парамедика носят только взрослые</PM_AdultsOnly>
+
+  <!-- Способности -->
+  <PM_ShoutMote>Медик! Не стрелять!</PM_ShoutMote>
+  <PM_ShoutBlocked>После вероломства крику не верят (ещё {0})</PM_ShoutBlocked>
+  <PM_NeedDowned>Цель должна лежать без сил.</PM_NeedDowned>
+  <PM_AlreadyBandaged>Давящая повязка уже наложена.</PM_AlreadyBandaged>
+  <PM_NoMedicine>Нет медикаментов в инвентаре</PM_NoMedicine>
+  <PM_AdrenalineHeart>Сердце {PAWN_nameGen} сегодня не выдержит второй укол.</PM_AdrenalineHeart>
+  <PM_NeedBelt>Нужна разгрузка парамедика</PM_NeedBelt>
+  <PM_NoSyringe>Нет шприца адреналина в инвентаре</PM_NoSyringe>
+  <PM_Triage>(истечёт кровью через {0})</PM_Triage>
+
+</LanguageData>

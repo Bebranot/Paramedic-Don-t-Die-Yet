@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <ResearchTabDef>
+    <defName>PM_ParamedicTab</defName>
+    <label>Paramedic</label>
+    <generalTitle>Paramedic</generalTitle>
+    <generalDescription>Rescue and field medicine.</generalDescription>
+  </ResearchTabDef>
+
+  <ResearchProjectDef>
+    <defName>PM_FieldMedicine</defName>
+    <label>field medicine</label>
+    <description>Organize a rescue service: the paramedic uniform (shirt, pants, vest, beret) and the oath that comes with it.</description>
+    <baseCost>800</baseCost>
+    <techLevel>Industrial</techLevel>
+    <tab>PM_ParamedicTab</tab>
+    <prerequisites>
+      <li>ComplexClothing</li>
+      <li>MedicineProduction</li>
+    </prerequisites>
+    <researchViewX>0</researchViewX>
+    <researchViewY>0</researchViewY>
+  </ResearchProjectDef>
+
+  <ResearchProjectDef>
+    <defName>PM_RescueGear</defName>
+    <label>rescue gear</label>
+    <description>Heavier rescue equipment: the fire-resistant rescue jacket, the paramedic helmet, the medicine rig and adrenaline syringes.</description>
+    <baseCost>1500</baseCost>
+    <techLevel>Industrial</techLevel>
+    <tab>PM_ParamedicTab</tab>
+    <prerequisites>
+      <li>PM_FieldMedicine</li>
+      <li>FlakArmor</li>
+    </prerequisites>
+    <researchViewX>1</researchViewX>
+    <researchViewY>0</researchViewY>
+  </ResearchProjectDef>
+
+  <ResearchProjectDef>
+    <defName>PM_TacticalMedicine</defName>
+    <label>tactical medicine</label>
+    <description>Thermal triage goggles that make the wounded visible through smoke and darkness.</description>
+    <baseCost>2500</baseCost>
+    <techLevel>Industrial</techLevel>
+    <tab>PM_ParamedicTab</tab>
+    <prerequisites>
+      <li>PM_RescueGear</li>
+      <li>MicroelectronicsBasics</li>
+    </prerequisites>
+    <researchViewX>2</researchViewX>
+    <researchViewY>0</researchViewY>
+  </ResearchProjectDef>
+
+</Defs>

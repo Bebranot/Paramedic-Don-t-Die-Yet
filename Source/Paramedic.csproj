@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Paramedic</AssemblyName>
+    <RootNamespace>Paramedic</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Krafs.Publicizer" Version="2.3.2" PrivateAssets="all" />
+    <Publicize Include="Assembly-CSharp" IncludeVirtualMembers="false" />
+  </ItemGroup>
+</Project>

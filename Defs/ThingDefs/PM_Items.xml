@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <ThingDef ParentName="ResourceBase">
+    <defName>PM_AdrenalineSyringe</defName>
+    <label>adrenaline syringe</label>
+    <description>A single-use autoinjector of combat adrenaline. A paramedic with a rig can jab it into a downed ally: they get up for half a minute - long enough to crawl into cover - then collapse again, worse for wear.</description>
+    <graphicData>
+      <texPath>Things/Paramedic/Item/PM_AdrenalineSyringe</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.8</drawSize>
+    </graphicData>
+    <stackLimit>10</stackLimit>
+    <techLevel>Industrial</techLevel>
+    <statBases>
+      <MaxHitPoints>50</MaxHitPoints>
+      <WorkToMake>1200</WorkToMake>
+      <Mass>0.05</Mass>
+      <Flammability>0.5</Flammability>
+      <DeteriorationRate>2</DeteriorationRate>
+    </statBases>
+    <costList>
+      <MedicineIndustrial>1</MedicineIndustrial>
+      <Neutroamine>1</Neutroamine>
+    </costList>
+    <recipeMaker>
+      <researchPrerequisite>PM_RescueGear</researchPrerequisite>
+      <workSpeedStat>DrugSynthesisSpeed</workSpeedStat>
+      <workSkill>Intellectual</workSkill>
+      <recipeUsers>
+        <li>DrugLab</li>
+      </recipeUsers>
+      <soundWorking>Recipe_Drug</soundWorking>
+      <skillRequirements><Intellectual>4</Intellectual></skillRequirements>
+      <displayPriority>900</displayPriority>
+    </recipeMaker>
+    <thingCategories>
+      <li>Manufactured</li>
+    </thingCategories>
+    <tradeTags>
+      <li>ExoticMisc</li>
+    </tradeTags>
+  </ThingDef>
+
+</Defs>

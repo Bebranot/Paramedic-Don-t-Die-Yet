@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <AbilityCategoryDef>
+    <defName>PM_Paramedic</defName>
+    <displayOrder>900</displayOrder>
+  </AbilityCategoryDef>
+
+  <AbilityDef ParentName="AbilityTouchBase">
+    <defName>PM_Stabilize</defName>
+    <label>field stabilization</label>
+    <description>Apply a tourniquet and pressure dressing to a downed person. All bleeding stops for 6 hours.\n\nUses one medicine from the paramedic's inventory.</description>
+    <iconPath>UI/Abilities/PM_Stabilize</iconPath>
+    <category>PM_Paramedic</category>
+    <displayOrder>100</displayOrder>
+    <cooldownTicksRange>60000</cooldownTicksRange>
+    <sendMessageOnCooldownComplete>true</sendMessageOnCooldownComplete>
+    <hostile>false</hostile>
+    <casterMustBeCapableOfViolence>false</casterMustBeCapableOfViolence>
+    <verbProperties>
+      <verbClass>Verb_CastAbilityTouch</verbClass>
+      <drawAimPie>false</drawAimPie>
+      <range>-1</range>
+      <warmupTime>3</warmupTime>
+      <targetParams>
+        <canTargetAnimals>true</canTargetAnimals>
+        <canTargetSelf>false</canTargetSelf>
+        <canTargetBuildings>false</canTargetBuildings>
+        <canTargetMechs>false</canTargetMechs>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="Paramedic.CompProperties_AbilityStabilize" />
+      <li Class="CompProperties_AbilityRequiresCapacity">
+        <capacity>Manipulation</capacity>
+      </li>
+    </comps>
+  </AbilityDef>
+
+  <AbilityDef>
+    <defName>PM_DontShoot</defName>
+    <label>medic! hold your fire!</label>
+    <description>Raise your hands and shout. For a few hours, most hostile humans won't choose this paramedic as a target and drop them if already aiming. Pirates often ignore it, the bloodthirsty always do; mechanoids, animals and entities never listen.\n\nHolding a long gun makes it less convincing. Attacking anyone while protected is perfidy: a heavy mood penalty, lost goodwill and no more shouting for 15 days.</description>
+    <iconPath>UI/Abilities/PM_DontShoot</iconPath>
+    <category>PM_Paramedic</category>
+    <displayOrder>200</displayOrder>
+    <cooldownTicksRange>180000</cooldownTicksRange>
+    <sendMessageOnCooldownComplete>true</sendMessageOnCooldownComplete>
+    <targetRequired>false</targetRequired>
+    <hostile>false</hostile>
+    <casterMustBeCapableOfViolence>false</casterMustBeCapableOfViolence>
+    <displayGizmoWhileUndrafted>true</displayGizmoWhileUndrafted>
+    <disableGizmoWhileUndrafted>false</disableGizmoWhileUndrafted>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <range>0.9</range>
+      <warmupTime>0.5</warmupTime>
+      <requireLineOfSight>false</requireLineOfSight>
+      <drawAimPie>false</drawAimPie>
+      <targetParams>
+        <canTargetSelf>true</canTargetSelf>
+        <canTargetPawns>true</canTargetPawns>
+        <canTargetBuildings>false</canTargetBuildings>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="Paramedic.CompProperties_AbilityDontShoot" />
+    </comps>
+  </AbilityDef>
+
+  <AbilityDef ParentName="AbilityTouchBase">
+    <defName>PM_AdrenalineShot</defName>
+    <label>adrenaline shot</label>
+    <description>Jab an adrenaline syringe into a downed person. They get back up for about half a minute - enough to reach cover - then collapse again with a comedown. Not twice in one day.\n\nRequires the paramedic rig and an adrenaline syringe in inventory.</description>
+    <iconPath>UI/Abilities/PM_Adrenaline</iconPath>
+    <category>PM_Paramedic</category>
+    <displayOrder>300</displayOrder>
+    <cooldownTicksRange>15000</cooldownTicksRange>
+    <hostile>false</hostile>
+    <casterMustBeCapableOfViolence>false</casterMustBeCapableOfViolence>
+    <verbProperties>
+      <verbClass>Verb_CastAbilityTouch</verbClass>
+      <drawAimPie>false</drawAimPie>
+      <range>-1</range>
+      <warmupTime>1</warmupTime>
+      <soundCast>Ingest_Inject</soundCast>
+      <targetParams>
+        <canTargetAnimals>false</canTargetAnimals>
+        <canTargetSelf>false</canTargetSelf>
+        <canTargetBuildings>false</canTargetBuildings>
+        <canTargetMechs>false</canTargetMechs>
+      </targetParams>
+    </verbProperties>
+    <comps>
+      <li Class="Paramedic.CompProperties_AbilityAdrenaline" />
+      <li Class="CompProperties_AbilityRequiresCapacity">
+        <capacity>Manipulation</capacity>
+      </li>
+    </comps>
+  </AbilityDef>
+
+</Defs>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <PM_OnDuty.label>на смене</PM_OnDuty.label>
+  <PM_OnDuty.description>Надеты жилет и берет (или каска) парамедика. Лучше лечит и оперирует, быстрее носит раненых — но поклялся не причинять вреда: убийство или увечье человека сильно бьёт по настроению. Хуже воюет.\n\nБонусы растут с качеством формы; чем больше вещей комплекта, тем сильнее стадия.</PM_OnDuty.description>
+  <PM_OnDuty.stages.0.label>базовая</PM_OnDuty.stages.0.label>
+  <PM_OnDuty.stages.1.label>экипирован</PM_OnDuty.stages.1.label>
+  <PM_OnDuty.stages.2.label>полная выкладка</PM_OnDuty.stages.2.label>
+
+  <PM_Rank.label>звание парамедика</PM_Rank.label>
+  <PM_Rank.description>Опыт спасённых жизней. Чем выше звание, тем лучше лечение, быстрее перезарядка способностей и спокойнее переносятся нарушения клятвы — повидал всякое.</PM_Rank.description>
+  <PM_Rank.stages.0.label>стажёр</PM_Rank.stages.0.label>
+  <PM_Rank.stages.1.label>парамедик</PM_Rank.stages.1.label>
+  <PM_Rank.stages.2.label>старший парамедик</PM_Rank.stages.2.label>
+  <PM_Rank.stages.3.label>ветеран спасательной службы</PM_Rank.stages.3.label>
+  <PM_Rank.stages.4.label>легенда</PM_Rank.stages.4.label>
+
+  <PM_SteadyNerves.label>стальные нервы</PM_SteadyNerves.label>
+  <PM_SteadyNerves.description>Видел достаточно смертей, чтобы они больше не выбивали из колеи.</PM_SteadyNerves.description>
+
+  <PM_PressureBandage.label>давящая повязка</PM_PressureBandage.label>
+  <PM_PressureBandage.description>Полевой жгут и давящая повязка. Кровотечение остановлено на несколько часов — хватит, чтобы донести до нормальной кровати.</PM_PressureBandage.description>
+
+  <PM_ShoutProtection.label>под защитой креста</PM_ShoutProtection.label>
+  <PM_ShoutProtection.description>Руки подняты, крик «Медик! Не стрелять!». Большинство враждебных людей не выберут эту пешку целью. Атаковать кого-либо под этой защитой — вероломство.</PM_ShoutProtection.description>
+
+  <PM_Adrenaline.label>прилив адреналина</PM_Adrenaline.label>
+  <PM_Adrenaline.description>Чистый боевой адреналин. Боли нет, ноги снова держат — пока.</PM_Adrenaline.description>
+
+  <PM_Comedown.label>отходняк после адреналина</PM_Comedown.label>
+  <PM_Comedown.description>Откат после укола адреналина: трясутся руки, в голове туман.</PM_Comedown.description>
+
+  <PM_AdrenalineCooldown.label>перегруженное сердце</PM_AdrenalineCooldown.label>
+  <PM_AdrenalineCooldown.description>Второй укол адреналина так скоро может остановить сердце.</PM_AdrenalineCooldown.description>
+
+  <PM_CrisisOfFaith.label>кризис веры</PM_CrisisOfFaith.label>
+  <PM_CrisisOfFaith.description>Слишком часто нарушал(а) клятву. Пока отказывается снова надевать жилет, берет или каску парамедика.</PM_CrisisOfFaith.description>
+
+</LanguageData>

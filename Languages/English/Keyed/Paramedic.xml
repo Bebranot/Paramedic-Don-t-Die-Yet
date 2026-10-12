@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <!-- Settings -->
+  <PM_Set_OathStrength>Oath mood penalty strength: {0}</PM_Set_OathStrength>
+  <PM_Set_ShoutHours>"Hold your fire!" duration: {0} h</PM_Set_ShoutHours>
+  <PM_Set_ShoutRespect>Chance that enemies respect the shout: {0}</PM_Set_ShoutRespect>
+  <PM_Set_Cooldown>Ability cooldowns: {0}</PM_Set_Cooldown>
+  <PM_Set_Crisis>Crisis of faith after 3 oath violations in 15 days</PM_Set_Crisis>
+  <PM_Set_Burnout>Burnout when many patients die</PM_Set_Burnout>
+  <PM_Set_Humanitarian>Goodwill for treating and releasing enemies</PM_Set_Humanitarian>
+  <PM_Set_AutoDoctor>Set Doctor priority to 1 when going on duty</PM_Set_AutoDoctor>
+  <PM_Set_AutoDoctor_Desc>Only applies when the pawn puts on the vest and beret/helmet.</PM_Set_AutoDoctor_Desc>
+  <PM_Set_Reset>Reset to defaults</PM_Set_Reset>
+
+  <!-- Gear -->
+  <PM_GearCore>Paramedic uniform: core piece (vest + beret/helmet = on duty)</PM_GearCore>
+  <PM_GearExtra>Paramedic uniform: extra piece</PM_GearExtra>
+  <PM_StatCarrying>Paramedic carrying the wounded</PM_StatCarrying>
+
+  <!-- Oath -->
+  <PM_RankUp>{PAWN_nameDef} is now a {RANK}.</PM_RankUp>
+  <PM_CrisisLabel>Crisis of faith</PM_CrisisLabel>
+  <PM_CrisisText>{PAWN_nameDef} has broken the paramedic's oath too many times and tore off the uniform. {PAWN_pronoun} refuses to wear it for a day.</PM_CrisisText>
+  <PM_PerfidyMsg>{PAWN_nameDef} attacked while under the cross. Perfidy - no shouting for 15 days.</PM_PerfidyMsg>
+  <PM_BurnoutBreak>burnout</PM_BurnoutBreak>
+  <PM_OathForbids>The paramedic's oath forbids this</PM_OathForbids>
+  <PM_CrisisCantWear>Crisis of faith: refuses to wear the paramedic uniform</PM_CrisisCantWear>
+  <PM_AdultsOnly>Only adults can wear the paramedic uniform</PM_AdultsOnly>
+
+  <!-- Abilities -->
+  <PM_ShoutMote>Medic! Hold your fire!</PM_ShoutMote>
+  <PM_ShoutBlocked>Nobody believes you after the perfidy ({0} left)</PM_ShoutBlocked>
+  <PM_NeedDowned>Target must be downed.</PM_NeedDowned>
+  <PM_AlreadyBandaged>Already has a pressure bandage.</PM_AlreadyBandaged>
+  <PM_NoMedicine>No medicine in inventory</PM_NoMedicine>
+  <PM_AdrenalineHeart>{PAWN_nameDef}'s heart can't take another shot today.</PM_AdrenalineHeart>
+  <PM_NeedBelt>Requires the paramedic rig</PM_NeedBelt>
+  <PM_NoSyringe>No adrenaline syringe in inventory</PM_NoSyringe>
+  <PM_Triage>(bleeds out in {0})</PM_Triage>
+
+</LanguageData>
