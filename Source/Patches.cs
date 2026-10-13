@@ -170,18 +170,20 @@ public static class Pawn_ThreatDisabled_Patch
 }
 
 [HarmonyPatch(typeof(Verb), nameof(Verb.TryStartCastOn), typeof(LocalTargetInfo), typeof(LocalTargetInfo), typeof(bool), typeof(bool), typeof(bool), typeof(bool))]
+[HarmonyPriority(-100)] // ниже дефолтного, чтобы CE-патчи (если есть) сработали первыми
 public static class Verb_TryStartCastOn_Patch
 {
     /// <summary>
     /// Под CE Verb_ShootCE может переопределять TryStartCastOn.
-    /// Prepare: без CE патч не нужен (возвращаем false, Harmony пропускает).
-    /// Priority: ниже дефолтного, чтобы CE-патчи (если есть) сработали первыми.
+    /// Prepare: возвращаем true (работаем всегда); CE-совместимость внутри Prefix.
+    /// Priority задаётся атрибутом [HarmonyPriority(-100)] — статическое свойство Priority Harmony не видит.
     /// </summary>
     static bool Prepare() => true; // работаем всегда; CE-совместимость внутри Prefix
 
-    static int Priority => CompatCE.Active ? -100 : 0;
-
-    public static bool Prefix(Verb __instance, LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack, bool canHitNonTargetPawns, bool preventFriendlyFire, bool nonInterrupting)
+    // Параметры Prefix должны точно совпадать с сигнатурой ванильного Verb.TryStartCastOn в 1.6:
+    // (LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack, bool canHitNonTargetPawns, bool preventFriendlyFire, bool nonInterrupting)
+    // Убираем неиспользуемые: destTarg, surpriseAttack, canHitNonTargetPawns, preventFriendlyFire, nonInterrupting
+    public static bool Prefix(Verb __instance, LocalTargetInfo castTarg)
     {
         if (ShoutUtility.Protected.Count == 0 || __instance is Verb_CastAbility) return true;
         Pawn caster = __instance.CasterPawn;

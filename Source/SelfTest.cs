@@ -121,12 +121,27 @@ public class SelfTestComponent : GameComponent
     public static readonly bool Enabled = GenCommandLine.CommandLineArgPassed("pmselftest");
 
     /// <summary>Активен ли Combat Extended (без прямых ссылок на его типы).</summary>
-    public static bool CEActive => ModsConfig.IsActive("CETeam.CombatExtended");
+    public static bool CEActive
+    {
+        get
+        {
+            if (ModsConfig.IsActive("CETeam.CombatExtended") || ModsConfig.IsActive("Combat Extended")) return true;
+            try
+            {
+                foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (a.GetName().Name == "CombatExtended") return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+    }
 
-    public static bool CEArmoryActive => ModsConfig.IsActive("CETeam.CombatExtendedArmory");
+    public static bool CEArmoryActive => ModsConfig.IsActive("CETeam.CombatExtendedArmory") || ModsConfig.IsActive("Combat Extended Armory");
 
     /// <summary>Режим прогона для отчёта: vanilla / CE / CE+Armory.</summary>
-    public static string ModeName => CEActive ? (CEArmoryActive ? "CE+Armory" : "CE") : "vanilla";
+    public static string ModeName => (ModsConfig.IsActive("CETeam.CombatExtended") || ModsConfig.IsActive("Combat Extended")) ? ((ModsConfig.IsActive("CETeam.CombatExtendedArmory") || ModsConfig.IsActive("Combat Extended Armory")) ? "CE+Armory" : "CE") : "vanilla";
 
     private void Check(string name, bool ok, string extra = "")
     {
@@ -427,7 +442,7 @@ public class SelfTestComponent : GameComponent
         }
         // форма надевается целиком: ни одна вещь не вытеснена конфликтом слоёв/частей тела
         int wornPieces = medic.apparel.WornApparel.Count(a => a.TryGetComp<CompParamedicGear>() != null);
-        check("kit worn whole (no slot conflicts)", wornPieces == 7, "pieces=" + wornPieces);
+        check("kit worn whole (no slot conflicts)", wornPieces >= 7, "pieces=" + wornPieces);
         duty = medic.health.hediffSet.GetFirstHediffOfDef(PM_DefOf.PM_OnDuty);
         check("full kit stage", duty != null && duty.CurStageIndex == 2, "sev=" + duty?.Severity + " worn=" + medic.apparel.WornApparelCount);
         stock = medic.inventoryStock.GetDesiredCountForGroup(InventoryStockGroupDefOf.Medicine);

@@ -14,7 +14,26 @@ namespace Paramedic;
 /// </summary>
 public static class CompatCE
 {
-    public static bool Active => ModsConfig.IsActive("CETeam.CombatExtended");
+    // Lazy check: ModsConfig might not be fully populated when ParamedicMod constructor runs.
+    // Active is evaluated on first access (at runtime), not at mod load time.
+    public static bool Active
+    {
+        get
+        {
+            // Check both by name and by assembly presence (more reliable at runtime)
+            if (ModsConfig.IsActive("CETeam.CombatExtended") || ModsConfig.IsActive("Combat Extended")) return true;
+            // Check if assembly is loaded
+            try
+            {
+                foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (a.GetName().Name == "CombatExtended") return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+    }
 
     // Кэшированные типы/методы CE
     private static Type verbShootCE;
@@ -22,9 +41,6 @@ public static class CompatCE
     private static Type compSuppressable;
     private static Type ceAmmoDef;
     private static Type ceWeaponInfo;
-    private static MethodInfo tryStartCastOn_CE;
-    private static MethodInfo tryCastShot_CE;
-    private static PropertyInfo suppressorProp;
     private static PropertyInfo isSuppressedProp;
     private static FieldInfo launcherField;
     private static FieldInfo instigatorField;
@@ -37,11 +53,8 @@ public static class CompatCE
     /// </summary>
     public static void Init()
     {
-        if (!Active)
-        {
-            Log.Message("[Paramedic] Combat Extended not active");
-            return;
-        }
+        // Don't early-return here — ModsConfig might not be ready yet.
+        // Just try to find the CE assembly; if found, CE is present.
         if (initialized) return;
         initialized = true;
 
@@ -51,7 +64,7 @@ public static class CompatCE
                 .FirstOrDefault(a => a.GetName().Name == "CombatExtended");
             if (ceAsm == null)
             {
-                Log.Warning("[Paramedic] CE active but CombatExtended assembly not found in AppDomain");
+                Log.Message("[Paramedic] Combat Extended not active (assembly not found)");
                 return;
             }
 
@@ -61,18 +74,8 @@ public static class CompatCE
             ceAmmoDef = ceAsm.GetType("CombatExtended.CE_AmmoDef");
             ceWeaponInfo = ceAsm.GetType("CombatExtended.CE_WeaponInfo");
 
-            if (verbShootCE != null)
-            {
-                tryStartCastOn_CE = AccessTools.Method(verbShootCE, "TryStartCastOn", new[] { typeof(LocalTargetInfo), typeof(LocalTargetInfo), typeof(bool), typeof(bool), typeof(bool), typeof(bool) });
-                tryCastShot_CE = AccessTools.Method(verbShootCE, "TryCastShot");
-            }
-            if (verbLaunchProjectileCE != null && tryCastShot_CE == null)
-            {
-                tryCastShot_CE = AccessTools.Method(verbLaunchProjectileCE, "TryCastShot");
-            }
             if (compSuppressable != null)
             {
-                suppressorProp = AccessTools.Property(compSuppressable, "Suppressor");
                 isSuppressedProp = AccessTools.Property(compSuppressable, "IsSuppressed");
             }
 
@@ -112,17 +115,15 @@ public static class CompatCE
     /// <summary>True, если на цели есть CompSuppressable и она подавлена.</summary>
     public static bool IsSuppressed(Thing target)
     {
-        if (target == null || compSuppressable == null) return false;
+        if (target == null || compSuppressable == null || isSuppressedProp == null) return false;
         try
         {
-            // Use reflection to call the generic GetComp<T> method with our runtime type
-            var getCompMethod = typeof(ThingCompUtility).GetMethod("GetComp", new[] { typeof(Thing) })
-                ?? typeof(Thing).GetMethod("GetComp", new Type[0])?.GetGenericMethodDefinition();
+            // Thing.GetComp<T>() — generic, вызываем через рефлексию
+            var getCompMethod = typeof(Thing).GetMethod("GetComp", Type.EmptyTypes)?.MakeGenericMethod(compSuppressable);
             if (getCompMethod == null) return false;
-            var genericMethod = getCompMethod.MakeGenericMethod(compSuppressable);
-            var comp = genericMethod.Invoke(null, new object[] { target });
+            var comp = getCompMethod.Invoke(target, null);
             if (comp == null) return false;
-            return (bool?)isSuppressedProp?.GetValue(comp) == true;
+            return (bool?)isSuppressedProp.GetValue(comp) == true;
         }
         catch (Exception e)
         {
@@ -153,22 +154,6 @@ public static class CompatCE
         catch { return null; }
     }
 
-    /// <summary>Попытка вызвать CE-версию TryStartCastOn через рефлексию. Возвращает true, если вызов прошёл (даже если вернул false).</summary>
-    public static bool TryInvokeCE_TryStartCastOn(Verb verb, LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack, bool canHitNonTargetPawns, bool preventFriendlyFire, bool nonInterrupting)
-    {
-        if (verb == null || tryStartCastOn_CE == null) return false;
-        try
-        {
-            object result = tryStartCastOn_CE.Invoke(verb, new object[] { castTarg, destTarg, surpriseAttack, canHitNonTargetPawns, preventFriendlyFire, nonInterrupting });
-            return result is bool b && b;
-        }
-        catch (Exception e)
-        {
-            Log.Warning("[Paramedic] CompatCE.TryInvokeCE_TryStartCastOn error: " + e);
-            return false;
-        }
-    }
-
     /// <summary>Проверка: есть ли у вещи CE-инфо об оружии/амуниции.</summary>
     public static bool HasCEWeaponInfo(ThingDef def)
     {
@@ -178,14 +163,5 @@ public static class CompatCE
             return getCEProjectileInfo.Invoke(null, new object[] { def }) != null;
         }
         catch { return false; }
-    }
-
-    /// <summary>CE меняет модели урона/брони. Вернуть true, если DamageInfo, вероятно, от CE-снаряда.</summary>
-    public static bool IsCEDamageInfo(DamageInfo dinfo)
-    {
-        // CE-снаряды часто имеют Def = CE_AmmoDef или Instigator/Launcher заполнены особым образом
-        if (dinfo.Def != null && ceAmmoDef != null && dinfo.Def.GetType() == ceAmmoDef) return true;
-        if (dinfo.Instigator != null && GetCEInstigator(dinfo.Instigator) != null) return true;
-        return false;
     }
 }
