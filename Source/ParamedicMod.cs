@@ -11,7 +11,9 @@ public class ParamedicMod : Mod
     public ParamedicMod(ModContentPack content) : base(content)
     {
         Settings = GetSettings<ParamedicSettings>();
-        PatchAllSafe(new Harmony("bebranotyep.paramedic"));
+        var harmony = new Harmony("bebranotyep.paramedic");
+        PatchAllSafe(harmony);
+        CompatCE.Init();
     }
 
     /// <summary>Каждый патч отдельно: сбой одного (например, после обновления игры) не отключает остальные.</summary>
