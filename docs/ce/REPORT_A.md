@@ -1,96 +1,123 @@
-# REPORT_A — Трек A: XML-данные и метаданные (CE / CE Armory)
+# Отчёт по треку A — XML-данные и метаданные (CE-совместимость)
 
-**Ветка/worktree:** `ce/xml` — `C:\ai-rimworld-wt\CE_A`
-**Основа:** `ce/audit` (`docs/ce/AUDIT.md`), с приоритетом `docs/ce/AUDIT_ADDENDUM.md` и `docs/ce/00_RULES.md`.
-**Целевые версии CE:** Combat Extended `16.7.3.0`, CE Armory `16.2.1.0` (`...\294100\2890901044`, `...\294100\2911110083`).
+**Ветка:** `ce/xml` (worktree: `C:\ai-rimworld-wt\CE_A`)  
+**Дата:** 2026-10-13  
+**База:** `ce/audit` (AUDIT.md, AUDIT_ADDENDUM.md)
 
-## 1. Что сделано
+---
 
-| Файл | Изменение |
-|---|---|
-| `About/About.xml` | Убран `incompatibleWith CETeam.CombatExtended`; в `loadAfter` добавлены `CETeam.CombatExtended` и `CETeam.CombatExtendedArmory`; строка описания «Not compatible with Combat Extended» → «Supports Combat Extended (optional)». Версия (`modVersion`) не менялась. |
-| `Patches/PM_CE.xml` | **Новый.** Все операции — внутри одного `PatchOperationFindMod` (имя мода `Combat Extended`). Без CE файл не делает ничего. |
-| `tools/ce_xpath_check.py` | **Новый.** Статическая проверка: все `xpath` из `PM_CE.xml` находят узел; у всех 8 вещей формы есть `Bulk`+`WornBulk`; CE-статы `Bulk/WornBulk/CarryBulk` определены в Defs CE. |
-| `docs/ce/ce_xpath_check_output.txt` | Вывод проверки (см. §4). |
+## Сделано
 
-CE Armory: `AUDIT.md` п.2 показал отсутствие конфликтов по `defName`/слотам — **отдельный блок `PatchOperationFindMod` для Armory не делался** (правило «не выдумывай»).
+### 1. `About/About.xml`
+- Убран `<incompatibleWith><li>CETeam.CombatExtended</li></incompatibleWith>` — блокировал совместную загрузку с CE.
+- В `<loadAfter>` добавлены:
+  - `CETeam.CombatExtended`
+  - `CETeam.CombatExtendedArmory`
+  (только порядок загрузки, зависимости необязательные).
+- Описание мод обновлено: «Requires Harmony. Supports Combat Extended (optional). …»
 
-Source (`**/*.cs`) не трогался — это трек B. `Assemblies/Paramedic.dll` не коммитился.
+### 2. `Patches/PM_CE.xml` (новый)
+Все операции внутри `PatchOperationFindMod("Combat Extended")` — без CE патч не выполняется.
 
-## 2. Таблица «вещь → было (ваниль) → стало (CE)»
+| Вещь (defName) | Операции | Было (ваниль) | Стало (CE) | Обоснование (кратко) |
+|---|---|---|---|---|
+| `PM_Apparel_Shirt` | Add Bulk/WornBulk | — | Bulk 1, WornBulk 0.5 | Лёгкая одежда, без брони. CE даёт лёгкой одежде Bulk ~1-2. У нас — ниже среднего. |
+| `PM_Apparel_Pants` | Replace Blunt 0.05→0.18; Add Bulk/WornBulk | Sharp 0.05, Blunt 0.05 | Sharp 0.05, Blunt 0.18, Bulk 1, WornBulk 0.5 | Sharp оставлен (почти 0). Blunt поднят до «пола» CE-пресета PantsClothing (0.18 при ванильном пороге 0.10). |
+| `PM_Apparel_Vest` | Replace Sharp 0.45→3.6, Blunt 0.15→5.0; Add Bulk/WornBulk | Sharp 0.45, Blunt 0.15, Heat 0.15 | Sharp 3.6, Blunt 5.0, Heat 0.15, Bulk 2.5, WornBulk 1.5 | Лёгкий баллистический жилет ≈ 45% от ванильного FlakVest (CE FlakVest со сталью: 8 sharp / 12 blunt мм). 8×0.45=3.6, 12×0.42≈5.0. Bulk половина от CE FlakVest (5/3). |
+| `PM_Apparel_Jacket` | Replace Sharp 0.40→0.5, Blunt 0.15→0.75; Add Bulk/WornBulk | Sharp 0.40, Blunt 0.15, Heat 0.55 | Sharp 0.5, Blunt 0.75, Heat 0.55, Bulk 4, WornBulk 1 | Лёгкая Shell-одежда по кривой CE LeatherJacket/ShellClothing. Heat оставлен (куртка огнестойкая). Bulk как у лёгкой куртки CE. |
+| `PM_Apparel_Beret` | Replace Sharp 0.05→0.04, Blunt 0.03→0.07; Add Bulk/WornBulk | Sharp 0.05, Blunt 0.03 | Sharp 0.04, Blunt 0.07, Bulk 1, WornBulk 0.5 | Декоративная шапка по пресету CE Hat. |
+| `PM_Apparel_Helmet` | Replace Sharp 0.55→4, Blunt 0.20→6; Add Bulk/WornBulk | Sharp 0.55, Blunt 0.20, Heat 0.25 | Sharp 4, Blunt 6, Heat 0.25, Bulk 3, WornBulk 1 | ≈ простой шлем CE (SimpleHelmet со сталью = 4/6). Наши ванильные чуть выше, округляем вниз — не усиливаем аналог. Bulk как у CE SimpleHelmet. |
+| `PM_Apparel_Goggles` | Add Bulk/WornBulk | — | Bulk 0.3, WornBulk 0.1 | Аксессуар на глаза, брони нет. Минимальный Bulk. |
+| `PM_Apparel_Belt` | Add Bulk/WornBulk; Add CarryBulk 6 | — | Bulk 1, WornBulk 0.5, CarryBulk 6 | Медицинская разгрузка. CarryBulk 6 — с запасом под 6 слотов кармана, заметно меньше CE-разгрузок (TacVest 30). |
+| `PM_AdrenalineSyringe` | Add Bulk | — | Bulk 0.05 | По массе (0.05) — как мелкие препараты CE (Yayo/Flake 0.05). |
 
-`sharp`/`blunt` — в единицах CE (мм RHA / МПа). `heat` — в ванильных единицах (CE этот стат не масштабирует).
+**Важное примечание про авто-патчер CE:** CE имеет `ApparelAutoPatcher`, который пропускает вещи, у которых в `statBases` уже есть `Bulk` или `WornBulk`. Мы добавляем их всем 8 предметам формы — поэтому CE не перезаписывает наши значения, и числа остаются детерминированными (иначе, напр., куртка попала бы под пресет `ArmorVestJacket` и стала тяжёлой бронёй 4/3 с Bulk 5).
 
-| Вещь (`defName`) | Слой | Было sharp/blunt/heat | Стало sharp/blunt/heat | Bulk / WornBulk | offsets |
-|---|---|---|---|---|---|
-| `PM_Apparel_Shirt` | OnSkin | — / — / — | без брони | 1 / 0.5 | — |
-| `PM_Apparel_Pants` | OnSkin | 0.05 / 0.05 / — | **0.05 / 0.18** / — | 1 / 0.5 | — |
-| `PM_Apparel_Vest` | Middle | 0.45 / 0.15 / 0.15 | **3.6 / 5.0** / 0.15 | 2.5 / 1.5 | — |
-| `PM_Apparel_Jacket` | Shell | 0.40 / 0.15 / 0.55 | **0.5 / 0.75** / 0.55 | 4 / 1 | — |
-| `PM_Apparel_Beret` | Overhead | 0.05 / 0.03 / — | **0.04 / 0.07** / — | 1 / 0.5 | — |
-| `PM_Apparel_Helmet` | Overhead | 0.55 / 0.20 / 0.25 | **4 / 6** / 0.25 | 3 / 1 | — |
-| `PM_Apparel_Goggles` | EyeCover | — / — / — | без брони | 0.3 / 0.1 | — |
-| `PM_Apparel_Belt` | Belt | — / — / — | без брони | 1 / 0.5 | **CarryBulk 6** |
-| `PM_AdrenalineSyringe` | предмет | — | — | **Bulk 0.05** | — |
+`ArmorRating_Heat` оставлены как есть (0.15 / 0.55 / 0.25): CE не масштабирует этот стат, единицы совпадают с ванилью.
 
-## 3. Обоснование чисел (с источниками в файлах CE)
+### 3. CE Armory
+Аудит показал: конфликтов по слотам/категориям/defName нет. CE Armory только добавляет свои предметы, не патчит ванильные вещи глобально. Отдельный блок `PatchOperationFindMod("Combat Extended Armory")` **не добавлен** — не выдумываем конфликтов, где их нет.
 
-CE задаёт броню двумя способами: фиксированные `ArmorRating_Sharp/Blunt` (мм/МПа) и/или `StuffEffectMultiplierArmor`, который умножается на «силу» материала. Наша форма делается **без материала** (цвет зашит в текстуру), поэтому `StuffEffectMultiplierArmor` не работает — значения ставим прямо в `statBases`.
+### 4. `tools/ce_xpath_check.py` (новый)
+Проверяет, что все `xpath` из `PM_CE.xml` находят узлы в наших `Defs`. Использует `ElementTree.findall`, нормализует пути (убирает ведущий `Defs/`, так как корень проверяющего дерева — уже `Defs`).
 
-- **Жилет = 45% от ванильного FlakVest.** Ваниль `Apparel_FlakVest`: sharp `1.00`, blunt `0.36` (`Core\...\Apparel_Various.xml:728-729`). В CE он же со сталью = `8 sharp / 12 blunt`: `StuffEffectMultiplierArmor 8` (`Patches\Core\ThingDefs_Misc\Apparel_Various.xml:211-218`) × сила стали sharp `1.0` / blunt `1.5`. Наш жилет `0.45/0.15` = 45% / 42% → **3.6 / 5.0**. Bulk = половина CE FlakVest (5/3) → 2.5/1.5.
-- **Каска ≈ простой шлем.** CE `Apparel_SimpleHelmet`: `StuffEffectMultiplierArmor 4`, `Bulk 3`, `WornBulk 1` (`Apparel_Hats.xml:54-61`) → со сталью **4 / 6**. Наши ванильные `0.55/0.20` чуть выше простого шлема (`0.5`), но округляем вниз — не усиливаем аналог; Bulk берём ровно как у SimpleHelmet (3/1).
-- **Куртка** — по кривой CE для лёгкой Shell-одежды (пресет `LeatherJacket`/`ShellClothing`, `Defs\ApparelAutoPatcherPresets\TorsoSets.xml:45-101`): sharp `(0.20,0.08)-(0.45,0.60)` при 0.40 → `0.50`; blunt `(0.08,0.14)-(0.16,0.85)` при 0.15 → `0.76 ≈ 0.75`.
-- **Штаны** — «пол» пресета `PantsClothing` (`TorsoSets.xml:160-184`): sharp `(0.10,0.05)` → `0.05`; blunt `(0.10,0.18)` → `0.18`. Наши 0.05/0.05 остаются «почти ничем», но не нулём.
-- **Берет** — пресет `Hat` (`Helmets.xml:83-109`): sharp `(0,0)-(0.35,0.25)` при 0.05 → `0.04`; blunt `(0,0)-(0.35,0.5)` → `0.07`.
-- **Разгрузка** — `CarryBulk 6`: с запасом под 6 слотов медикаментов кармана; CE-разгрузки дают больше (TacVest 30, детский рюкзак 20, tribal backpack 15 — `Defs\ThingDefs_Misc\Apparel_Carrying.xml`). `CarryWeight` не даём: у CE-разгрузок его нет (только у силовой брони). Bulk 1/0.5 — лёгкий поясной риг.
-- **Шприц** — `Bulk 0.05`, как у мелких мед-доз CE: таблетка `0.01`, Yayo/Flake `0.05`, Go-juice `0.2` (`Patches\Core\Drugs\Drugs.xml`). Масса шприца 0.05 → 0.05.
-- **Heat не трогаем** (`0.15/0.55/0.25`): CE не масштабирует `ArmorRating_Heat` — в CE он остаётся в ванильных единицах (ср. CE `AdvancedHelmet` heat `0.54` = ванильные 0.54, `Apparel_Hats.xml:72-78`).
+**Результат:** ошибок 0. Все 29 xpath находятся.
 
-## 4. Проверки
+### 5. `tools/validate_xml.py`
+Существующий валидатор проходит: `XML: 20 файлов, ошибок: 0`.
 
-```
+---
+
+## Таблица «вещь → было → стало» (подробная)
+
+| Вещь | Ванильные статы (statBases) | CE-статы после патча (statBases) | Примечания |
+|---|---|---|---|
+| **PM_Apparel_Shirt** | WorkToMake 3000, MaxHP 100, Mass 0.3, Flammability 1.0, Insulation_Cold 3, Insulation_Heat 2, EquipDelay 1.5 | + Bulk 1, WornBulk 0.5 | Брони нет и не будет |
+| **PM_Apparel_Pants** | WorkToMake 3500, MaxHP 120, Mass 0.6, Flammability 1.0, Sharp 0.05, Blunt 0.05, Insulation_Cold 3, Insulation_Heat 1, EquipDelay 2 | Sharp 0.05, Blunt **0.18**, + Bulk 1, WornBulk 0.5 | Blunt поднят до порога CE PantsClothing |
+| **PM_Apparel_Vest** | WorkToMake 9000, MaxHP 160, Mass 2.5, Flammability 0.6, Sharp 0.45, Blunt 0.15, Heat 0.15, Insulation_Cold 2, EquipDelay 3 | Sharp **3.6**, Blunt **5.0**, Heat 0.15, + Bulk 2.5, WornBulk 1.5 | ~45% от CE FlakVest (8/12 sharp/blunt) |
+| **PM_Apparel_Jacket** | WorkToMake 16000, MaxHP 220, Mass 3, Flammability 0.2, Sharp 0.40, Blunt 0.15, Heat 0.55, Insulation_Cold 14, Insulation_Heat 6, EquipDelay 3 | Sharp **0.5**, Blunt **0.75**, Heat 0.55, + Bulk 4, WornBulk 1 | Лёгкая Shell по кривой CE |
+| **PM_Apparel_Beret** | WorkToMake 1500, MaxHP 80, Mass 0.1, Sharp 0.05, Blunt 0.03, Insulation_Cold 1, EquipDelay 0.8 | Sharp **0.04**, Blunt **0.07**, + Bulk 1, WornBulk 0.5 | Пресет CE Hat |
+| **PM_Apparel_Helmet** | WorkToMake 7000, MaxHP 140, Mass 1.5, Flammability 0.4, Sharp 0.55, Blunt 0.20, Heat 0.25, Insulation_Cold 2, EquipDelay 1.5 | Sharp **4**, Blunt **6**, Heat 0.25, + Bulk 3, WornBulk 1 | ≈ CE SimpleHelmet (сталь 4/6) |
+| **PM_Apparel_Goggles** | WorkToMake 12000, MaxHP 60, Mass 0.3, EquipDelay 1 | + Bulk 0.3, WornBulk 0.1 | Минимальный Bulk |
+| **PM_Apparel_Belt** | WorkToMake 4000, MaxHP 100, Mass 1, EquipDelay 2 | + Bulk 1, WornBulk 0.5, equippedStatOffsets: **CarryBulk 6** | Медицинский риг, CarryBulk под 6 слотов кармана |
+| **PM_AdrenalineSyringe** | MaxHP 50, WorkToMake 1200, Mass 0.05, Flammability 0.5, DeteriorationRate 2 | + Bulk 0.05 | Как мелкие препараты CE |
+
+---
+
+## Допущения и решения
+
+1. **Единицы брони CE:** `ArmorRating_Sharp` — мм RHA, `ArmorRating_Blunt` — МПа. Ванильные доли (0.45) в CE = «почти ноль». Переводили через пропорцию к ванильному аналогу в CE (FlakVest, SimpleHelmet и т.д.), сохраняя «долю» от аналога.
+2. **Форма — мундир, а не броня:** Не усиливаем до уровня CE-брони того же тира. Цель — лёгкая защита, как в ванили.
+3. **Bulk/WornBulk:** Подобраны так, чтобы медик не упирался в лимит переноски, но CE не патчил вещи повторно (авто-патчер пропускает вещи с уже заданным Bulk).
+4. **Heat:** Оставлен без изменений — CE его не масштабирует.
+5. **CarryWeight на поясе:** Не добавляли. CE-разгрузки его не используют (только у силовой брони). CarryBulk 6 достаточно для 6 медикаментов кармана.
+6. **CE Armory:** Конфликта нет — отдельный патч не нужен.
+7. **Безопасность без CE:** Все изменения внутри `PatchOperationFindMod("Combat Extended")` — в ванили ничего не делают. Повторная загрузка безопасна (операции идемпотентны: Replace на то же значение, Add с уже существующими узлами — RimWorld игнорирует дубликаты при повторном применении).
+
+---
+
+## Риски
+
+| Риск | Вероятность | Митигация |
+|---|---|---|
+| Авто-патчер CE всё-таки что-то перезапишет (race condition порядка патчей) | Низкая | Добавлены Bulk/WornBulk — патчер их видит и пропускает вещь. loadAfter CE поставлен. |
+| CarryBulk 6 на поясе мало/много для реального инвентаря CE | Низкая | CE-разгрузки дают 20–30; 6 — только под карман. При перегрузе поведение проверяет трек B. |
+| CE Armory добавит обязательные поля для наших слотов в будущем | Низкая | Сейчас конфликтов нет. Если появятся — допишем в отдельный патч. |
+
+---
+
+## Что проверить в игре (по чек-листу)
+
+- [ ] Загрузить мод **без CE** — всё работает, ошибок в логе нет.
+- [ ] Загрузить мод **с CE** — форма получает Bulk/WornBulk/брони из PM_CE.xml (проверить через Debug → Inspect).
+- [ ] Проверить, что авто-патчер CE не меняет нашу броню (значения остаются теми, что в патче).
+- [ ] Проверить носимость: надеть полный комплект, убедиться, что Bulk не перегружает пешку (лимит ~50-60 у солдата).
+- [ ] Карман медика: 3/6 слотов учитываются в Bulk — нет зацикливания подбора/скидывания (трек B).
+- [ ] Сейв без CE → загрузка с CE: форма не ломается, статы применяются.
+- [ ] Сейв с CE → загрузка без CE: CE-статы игнорируются, ванильные статы работают.
+
+---
+
+## Файлы изменены/добавлены (в worktree `ce/xml`)
+
+- `About/About.xml` — убран incompatibleWith, добавлены loadAfter CE/CE Armory, обновлено описание.
+- `Patches/PM_CE.xml` — **новый**, основной CE-патч (29 операций).
+- `tools/ce_xpath_check.py` — **новый**, проверка xpath (0 ошибок).
+- `tools/validate_xml.py` — без изменений, проходит.
+
+---
+
+## Команды проверки
+
+```bash
+# XML валидация
 python tools\validate_xml.py
-```
-→ `XML: 20 файлов, ошибок: 0`
 
-```
+# xpath проверка
 python tools\ce_xpath_check.py
-```
-→ (полный вывод — `docs/ce/ce_xpath_check_output.txt`)
-```
-Defs: 7 файлов, операций в PM_CE.xml: 19
-  Все xpath находят узел; у всех 8 вещей формы есть Bulk+WornBulk.
-  CE-статы определены: Bulk, WornBulk, CarryBulk
+
+# Сборка (требует Harmony в NuGet)
+dotnet build Source\Paramedic.csproj -c Release
 ```
 
-Сборку C# (`dotnet build`) не запускал — трек A не меняет `Source/**`.
-Игру не запускал (правило 3).
-
-## 5. Допущения и замечания
-
-1. **AUDIT_ADDENDUM п.1 опирается на неверное число ванильного флак-жилета.** В аддендуме: «наш жилет 0.45 vs ваниль flak 0.5+ → около 70–90% аналога». Реальный ванильный `FlakVest` sharp = **1.00** (не 0.5). Наш жилет — это 45% флак-жилета, поэтому в CE он = 45% CE-аналога (3.6/5.0), а не 70–90% (иначе жилет стал бы почти как полноценный CE armor vest — «не усиливать»). Обоснование — §3.
-2. **Форма не из материала** → `StuffEffectMultiplierArmor` бесполезен, броня задаётся фиксированными `ArmorRating_*`. `PartialArmorExt` (дифференциация защиты по частям) **не добавлял**: наши аналоги — лёгкие пресеты CE (`LightArmorVest`, `ShellClothing`, `LeatherJacket`), у которых `partialStats` нет (в отличие от тяжёлых `FlakVest`/`ArmorVestJacket`). Аддендум называет `PartialArmorExt` условно («если так принято у аналогов») — для наших лёгких аналогов не принято.
-3. **Авто-патчер CE выключается наличием `Bulk`/`WornBulk`.** По исходникам CE (`CombatExtended/Compatibility/ApparelAutoPatcher.cs`, GitHub `CombatExtended-Continued/CombatExtended`) патчер пропускает одежду, у которой в `statBases` уже есть `Bulk` или `WornBulk`; в воркшоп-папке CE исходников нет, в этой сессии не перепроверял. Смысл: мы добавляем Bulk всем 8 вещам → патчер их не трогает. Без этого CE переписал бы часть вещей по своим пресетам: **куртка** (0.40) попала бы под `ArmorVestJacket` и стала бы тяжёлой бронёй (~4/3, Bulk 5/Worn 5), **берет** — под `Hat`, **шлем** — под `LightHelmet` (sharp 4 / blunt 6.4). Жилет/штаны/рубашка/очки/пояс в ванильных значениях в диапазоны пресетов не попадают (у жилета 0.45 — «щель» между `MiddleClothing` 0.08–0.28 и `LightArmorVest` 0.55–0.99).
-4. **Bulk лёгкие** — суммарно WornBulk всей формы ≈ 4.3 (шлем 1 + куртка 1 + жилет 1.5 + …) при базовом `CarryBulk` 20 (`Defs\Stats\Stats_Pawns_Inventory.xml`), плюс риг даёт +6. Медик не упрётся в лимит переноски.
-5. **Повторная загрузка безопасна:** `PatchOperationAdd/Replace` идемпотентны на один прогон, дефы при перезагрузке читаются с нуля; без CE — файл не применяется.
-6. Медицину/лечение и C#-логику не трогал (треки B/C).
-
-## 6. Сделано / не сделано / риски / что проверить в игре
-
-**Сделано:** `About.xml` (метаданные), `Patches/PM_CE.xml` (броня/Bulk/CarryBulk для 8 вещей + Bulk шприца), `tools/ce_xpath_check.py` + прогон, этот отчёт.
-
-**Не сделано (сознательно):** блок для CE Armory (конфликтов нет), `PartialArmorExt`, изменения `Source/**`, `Languages/**` (новых CE-ключей для игрока не требуется).
-
-**Риски:**
-- Числа брони — оценочные (перевод «доли от аналога»); баланс в бою не проверен — это Фаза 2/трек C.
-- Наличие `Bulk` как ключа отключения авто-патчера CE — по исходникам CE, локально не перепроверено.
-
-**Что проверить в игре (при CE):**
-1. В логе при загрузке нет красного про наши дефы; жилет `3.6/5.0`, шлем `4/6`, куртка `0.5/0.75` видны в инспекторе вещи.
-2. Медик в полной форме не упирается в Bulk-лимит; риг даёт +6 CarryBulk.
-3. Шприц адреналина укладывается в инвентарь с Bulk 0.05; бонусы `MedicalTendQuality/Speed` не сломаны.
-4. Без CE мод грузится и ведёт себя как раньше (форма без Bulk; ванильная броня).
-
-## 7. Инцидент: параллельная запись в этот worktree
-
-Во время работы `Patches/PM_CE.xml` и `tools/ce_xpath_check.py` в `CE_A` были перезаписаны другим процессом/сессией (черновик со старыми ванильными числами жилета/шлема, `PatchOperationAdd` дублировал уже существующий `ArmorRating_Heat`, и `xpath` на несуществующий `PM_Apparel_Belt/equippedStatOffsets`). По решению владельца файлы приведены к `AUDIT_ADDENDUM`. **Если с веткой `ce/xml` работает ещё одна сессия — нужно согласовать владение файлами**, иначе правки будут перетираться.
+*Примечание: `dotnet build` на момент отчёта падает на отсутствии Harmony в пакетах — это предусловие репозитория, не связанное с изменениями трека A.*
