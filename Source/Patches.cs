@@ -20,6 +20,17 @@ public static class Pawn_Kill_Patch
         if (!ParamedicUtility.CountsAsHuman(__instance)) return;
 
         Pawn killer = dinfo?.Instigator as Pawn;
+
+        // CE: попробуем получить виновника из CE-снаряда (instigator/launcher)
+        if (killer == null && CompatCE.Active && dinfo.HasValue)
+        {
+            Thing instigatorThing = dinfo.Value.Instigator;
+            if (instigatorThing != null)
+            {
+                killer = CompatCE.GetCEInstigator(instigatorThing) ?? CompatCE.GetCELauncher(instigatorThing);
+            }
+        }
+
         if (killer == null && GameComponent_Paramedic.Instance.lastHarm.TryGetValue(__instance, out var harm)
             && Find.TickManager.TicksGame - harm.tick < GenDate.TicksPerHour * 2)
         {
@@ -41,7 +52,15 @@ public static class Thing_TakeDamage_Patch
     public static void Prefix(Thing __instance, DamageInfo dinfo, out int __state)
     {
         __state = -1;
-        if (__instance is Pawn victim && dinfo.Instigator is Pawn attacker && attacker != victim
+        Pawn attacker = dinfo.Instigator as Pawn;
+
+        // CE: если инстигатор не Pawn, попробуем достать из CE-снаряда
+        if (attacker == null && CompatCE.Active)
+        {
+            attacker = CompatCE.GetCEInstigator(dinfo.Instigator) ?? CompatCE.GetCELauncher(dinfo.Instigator);
+        }
+
+        if (__instance is Pawn victim && attacker != null && attacker != victim
             && attacker.RaceProps.Humanlike && ParamedicUtility.CountsAsHuman(victim) && IsSworn(attacker))
         {
             __state = victim.health.hediffSet.GetMissingPartsCommonAncestors().Count;
@@ -54,10 +73,20 @@ public static class Thing_TakeDamage_Patch
 
     public static void Postfix(Thing __instance, DamageInfo dinfo, DamageWorker.DamageResult __result, int __state)
     {
-        if (__state < 0 || __instance is not Pawn victim || dinfo.Instigator is not Pawn attacker) return;
+        if (__state < 0 || __instance is not Pawn victim) return;
         if (__result == null || __result.totalDamageDealt <= 0f) return;
         var comp = GameComponent_Paramedic.Instance;
         if (comp == null) return;
+
+        Pawn attacker = dinfo.Instigator as Pawn;
+
+        // CE: если инстигатор не Pawn, попробуем достать из CE-снаряда
+        if (attacker == null && CompatCE.Active)
+        {
+            attacker = CompatCE.GetCEInstigator(dinfo.Instigator) ?? CompatCE.GetCELauncher(dinfo.Instigator);
+        }
+
+        if (attacker == null) return;
 
         comp.lastHarm[victim] = (attacker, Find.TickManager.TicksGame);
         if (victim.Dead) return; // смерть посчитает Pawn.Kill
@@ -143,14 +172,27 @@ public static class Pawn_ThreatDisabled_Patch
 [HarmonyPatch(typeof(Verb), nameof(Verb.TryStartCastOn), typeof(LocalTargetInfo), typeof(LocalTargetInfo), typeof(bool), typeof(bool), typeof(bool), typeof(bool))]
 public static class Verb_TryStartCastOn_Patch
 {
-    public static bool Prefix(Verb __instance, LocalTargetInfo castTarg)
+    /// <summary>
+    /// Под CE Verb_ShootCE может переопределять TryStartCastOn.
+    /// Prepare: без CE патч не нужен (возвращаем false, Harmony пропускает).
+    /// Priority: ниже дефолтного, чтобы CE-патчи (если есть) сработали первыми.
+    /// </summary>
+    static bool Prepare() => true; // работаем всегда; CE-совместимость внутри Prefix
+
+    static int Priority => CompatCE.Active ? -100 : 0;
+
+    public static bool Prefix(Verb __instance, LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack, bool canHitNonTargetPawns, bool preventFriendlyFire, bool nonInterrupting)
     {
         if (ShoutUtility.Protected.Count == 0 || __instance is Verb_CastAbility) return true;
         Pawn caster = __instance.CasterPawn;
         if (caster == null) return true;
+
+        // CE: если пешка подавлена (CompSuppressable), она и так не стреляет — не вмешиваемся.
+        if (CompatCE.Active && CompatCE.IsSuppressed(caster)) return true;
+
         if (castTarg.Thing == null)
         {
-            // огонь по клетке (подавление у CAI 5000): не по позиции защищённого медика
+            // огонь по клетке (подавление у CAI 5000 / CE suppression fire): не по позиции защищённого медика
             if (castTarg.IsValid && ShoutUtility.ProtectedNear(castTarg.Cell, caster, 1.9f))
             {
                 if (SelfTestComponent.Enabled) SelfTestComponent.BlockedShots++;
