@@ -88,5 +88,7 @@ public class ShotTestComponent : GameComponent
             models.Add(p);
         }
         Find.CameraDriver.SetRootPosAndSize(center.ToVector3Shifted(), 9f);
+        // CE на картинку формы не влияет (Bulk/броня — только статы); режим в логе, чтобы не путать снимки
+        Log.Message($"[Paramedic] shot mode: {SelfTestComponent.ModeName}");
     }
 }
