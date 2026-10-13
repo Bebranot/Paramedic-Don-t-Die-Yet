@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Набор модов для CE-прогона автотеста (tools/run_selftest_ce.ps1).
+  Порядок загрузки: Harmony -> Core/DLC -> Combat Extended -> CE Armory -> Paramedic.
+
+  Скрипт берёт отсюда ТОЛЬКО <activeMods> и вставляет их в настоящий ModsConfig.xml,
+  сохраняя его <version> и <knownExpansions>. Сам этот файл не является рабочим
+  ModsConfig.xml, игра его не читает.
+-->
+<ModsConfigData>
+  <activeMods>
+    <li>brrainz.harmony</li>
+    <li>ludeon.rimworld</li>
+    <li>ludeon.rimworld.royalty</li>
+    <li>ludeon.rimworld.ideology</li>
+    <li>ludeon.rimworld.biotech</li>
+    <li>ludeon.rimworld.anomaly</li>
+    <li>ludeon.rimworld.odyssey</li>
+    <li>CETeam.CombatExtended</li>
+    <li>CETeam.CombatExtendedArmory</li>
+    <li>bebranotyep.paramedic</li>
+  </activeMods>
+</ModsConfigData>

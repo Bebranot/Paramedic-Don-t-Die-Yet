@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using RimWorld;
 using UnityEngine;
@@ -34,6 +35,67 @@ public static class SelfTest_BulletImpact_Patch
     }
 }
 
+/// <summary>
+/// Диагностика CE-снарядов: <c>CombatExtended.ProjectileCE</c> (и его наследник <c>BulletCE</c>, который зовёт base.Impact)
+/// вместо ванильного <c>Bullet</c>. Доступ только через рефлексию — ссылки на сборку CE в csproj нет (правило 5).
+/// </summary>
+[HarmonyLib.HarmonyPatch]
+public static class SelfTest_CEProjectileImpact_Patch
+{
+    private static FieldInfo launcherField, intendedField;
+
+    public static bool Prepare() => SelfTestComponent.Enabled && SelfTestComponent.CEActive
+        && HarmonyLib.AccessTools.TypeByName("CombatExtended.ProjectileCE") != null;
+
+    public static MethodBase TargetMethod()
+    {
+        Type t = HarmonyLib.AccessTools.TypeByName("CombatExtended.ProjectileCE");
+        return HarmonyLib.AccessTools.Method(t, "Impact", new[] { typeof(Thing) });
+    }
+
+    public static void Prefix(object __instance, Thing hitThing)
+    {
+        if (launcherField == null)
+        {
+            Type t = HarmonyLib.AccessTools.TypeByName("CombatExtended.ProjectileCE");
+            launcherField = HarmonyLib.AccessTools.Field(t, "launcher");
+            intendedField = HarmonyLib.AccessTools.Field(t, "intendedTarget");
+        }
+        if (hitThing is not Pawn p || !ShoutUtility.Protected.Contains(p)) return;
+        var launcher = launcherField?.GetValue(__instance) as Pawn;
+        LocalTargetInfo intended = intendedField != null ? (LocalTargetInfo)intendedField.GetValue(__instance) : LocalTargetInfo.Invalid;
+        float respect = launcher != null ? ShoutUtility.RespectChance(launcher, p) : -1f;
+        bool mustRespect = launcher != null && ShoutUtility.IsProtectedFrom(p, launcher);
+        if (intended.Thing != p) SelfTestComponent.CEStrayHits++;
+        else if (mustRespect) SelfTestComponent.CEAimedHits++;
+        else SelfTestComponent.CEAllowedHits++;
+        SelfTestComponent.Events.Add($"  respect={respect:0.##} mustRespect={mustRespect} mental={launcher?.MentalStateDef?.defName}");
+        SelfTestComponent.Events.Add($"CE projectile hit medic: launcher={launcher?.LabelShort ?? "?"}, intended={intended.Thing?.LabelShort ?? intended.Cell.ToString()}");
+    }
+}
+
+/// <summary>
+/// Счёт реальных выстрелов CE: каждый созданный снаряд <c>ProjectileCE</c> (путь <c>Verb_LaunchProjectileCE.SpawnProjectile</c>).
+/// Без этого боя с CE может не быть вовсе, а тест «медик не ранен» останется ложно зелёным.
+/// </summary>
+[HarmonyLib.HarmonyPatch]
+public static class SelfTest_CEShot_Patch
+{
+    public static bool Prepare() => SelfTestComponent.Enabled && SelfTestComponent.CEActive
+        && HarmonyLib.AccessTools.TypeByName("CombatExtended.Verb_LaunchProjectileCE") != null;
+
+    public static MethodBase TargetMethod()
+    {
+        Type t = HarmonyLib.AccessTools.TypeByName("CombatExtended.Verb_LaunchProjectileCE");
+        return HarmonyLib.AccessTools.Method(t, "SpawnProjectile", Type.EmptyTypes);
+    }
+
+    public static void Prefix(object __instance)
+    {
+        if ((__instance as Verb)?.CasterPawn is Pawn p && p.HostileTo(Faction.OfPlayer)) SelfTestComponent.CEShots++;
+    }
+}
+
 public class SelfTestComponent : GameComponent
 {
     private const int LiveFireTicks = 3000;
@@ -51,10 +113,20 @@ public class SelfTestComponent : GameComponent
 
     /// <summary>Счётчики из патча Verb.TryStartCastOn (только в автотесте).</summary>
     public static int HostileShots, BlockedShots, AimedHits, StrayHits, AllowedHits;
+    /// <summary>CE: реальные снаряды (ProjectileCE) и попадания ими по защищённому медику.</summary>
+    public static int CEShots, CEAimedHits, CEAllowedHits, CEStrayHits;
 
     public SelfTestComponent(Game game) { }
 
     public static readonly bool Enabled = GenCommandLine.CommandLineArgPassed("pmselftest");
+
+    /// <summary>Активен ли Combat Extended (без прямых ссылок на его типы).</summary>
+    public static bool CEActive => ModsConfig.IsActive("CETeam.CombatExtended");
+
+    public static bool CEArmoryActive => ModsConfig.IsActive("CETeam.CombatExtendedArmory");
+
+    /// <summary>Режим прогона для отчёта: vanilla / CE / CE+Armory.</summary>
+    public static string ModeName => CEActive ? (CEArmoryActive ? "CE+Armory" : "CE") : "vanilla";
 
     private void Check(string name, bool ok, string extra = "")
     {
@@ -106,7 +178,10 @@ public class SelfTestComponent : GameComponent
     {
         phase = 2;
         ParamedicMod.Settings.shoutRespectFactor = 1f;
+        int logErrors = LogErrorCount();
         sb.Insert(0, $"Paramedic self-test: {(fails == 0 ? "PASS" : fails + " FAIL")}\n" +
+            $"mode: {ModeName}\n" +
+            $"log errors (approx, so far): {(logErrors < 0 ? "n/a" : logErrors.ToString())}\n" +
             $"mods: {string.Join(", ", ModsConfig.ActiveModsInLoadOrder.Select(m => m.PackageId))}\n\n");
         // сейв для проверки загрузки: RimWorldWin64.exe -dutyloadsave=ParamedicSelfTest (инструмент DutyOptim)
         try
@@ -120,6 +195,16 @@ public class SelfTestComponent : GameComponent
         }
         string path = Path.Combine(GenFilePaths.SaveDataFolderPath, "ParamedicSelfTest.txt");
         File.WriteAllText(path, sb.ToString());
+        // итог по режиму: файл накапливает строки от прогонов vanilla и CE, чтобы PASS/FAIL сравнивались в одном месте
+        try
+        {
+            File.AppendAllText(Path.Combine(GenFilePaths.SaveDataFolderPath, "ParamedicSelfTest.modes.txt"),
+                $"{DateTime.Now:yyyy-MM-dd HH:mm} mode={ModeName} selftest={(fails == 0 ? "PASS" : "FAIL")} logerrors={(logErrors < 0 ? "n/a" : logErrors.ToString())}\n");
+        }
+        catch (Exception e)
+        {
+            sb.AppendLine("modes summary not written: " + e.Message);
+        }
         Log.Message("[Paramedic] self-test written to " + path);
         if (!GenCommandLine.CommandLineArgPassed("pmstay")) Application.Quit();
     }
@@ -149,16 +234,68 @@ public class SelfTestComponent : GameComponent
             // детерминированный бой: без кровожадных (им крик не указ) и без взрывчатки (взрыв не выбирает цель)
             Trait blood = r.story?.traits?.GetTrait(TraitDefOf.Bloodlust);
             if (blood != null) r.story.traits.RemoveTrait(blood);
-            r.equipment.DestroyAllEquipment();
-            r.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(DefDatabase<ThingDef>.GetNamed("Gun_AssaultRifle")));
+            ArmRaider(r);
             raiders.Add(r);
+        }
+        if (CEActive)
+        {
+            int armed = raiders.Count(IsCEArmedWithAmmo);
+            Check("CE: raiders have CE weapons + ammo", armed == raiders.Count, armed + "/" + raiders.Count);
         }
         Events.Clear();
         Verse.AI.Group.LordMaker.MakeNewLord(pirates, new LordJob_AssaultColony(pirates, canKidnap: false, canTimeoutOrFlee: false), map, raiders);
         medicInjuriesBefore = InjuryCount(liveMedic);
         HostileShots = BlockedShots = AimedHits = StrayHits = AllowedHits = 0;
+        CEShots = CEAimedHits = CEAllowedHits = CEStrayHits = 0;
         liveFireStart = Find.TickManager.TicksGame;
         Find.TickManager.CurTimeSpeed = TimeSpeed.Ultrafast;
+    }
+
+    /// <summary>Вооружает пирата; с CE — досылает магазин и кладёт патроны, иначе он не стреляет и бой ложно зелёный.</summary>
+    private void ArmRaider(Pawn r)
+    {
+        r.equipment.DestroyAllEquipment();
+        var gun = (ThingWithComps)ThingMaker.MakeThing(DefDatabase<ThingDef>.GetNamed("Gun_AssaultRifle"));
+        r.equipment.AddEquipment(gun);
+        if (!CEActive) return;
+
+        ThingComp comp = gun.AllComps.FirstOrDefault(c => c.GetType().Name == "CompAmmoUser");
+        if (comp == null)
+        {
+            sb.AppendLine("  CE: no CompAmmoUser on " + gun.def.defName);
+            return;
+        }
+        // полный магазин — штатный путь CE при генерации рейдеров
+        Type ammoDefType = HarmonyLib.AccessTools.TypeByName("CombatExtended.AmmoDef");
+        comp.GetType().GetMethod("ResetAmmoCount", new[] { ammoDefType })?.Invoke(comp, new object[] { null });
+        // запас патронов в инвентарь — на перезарядку
+        ThingDef ammo = FirstAmmoDef(comp);
+        if (ammo != null)
+        {
+            Thing stack = ThingMaker.MakeThing(ammo);
+            stack.stackCount = Mathf.Min(60, ammo.stackLimit);
+            r.inventory.innerContainer.TryAdd(stack);
+        }
+        sb.AppendLine($"  CE raider {r.LabelShort}: {gun.def.defName} mag={MagCount(comp)} ammo={ammo?.defName ?? "?"}");
+    }
+
+    /// <summary>Первый подходящий патрон патронного набора оружия (через рефлексию).</summary>
+    private static ThingDef FirstAmmoDef(ThingComp comp)
+    {
+        object ammoSet = comp.GetType().GetProperty("CurAmmoSet")?.GetValue(comp);
+        if (ammoSet?.GetType().GetField("ammoTypes")?.GetValue(ammoSet) is not System.Collections.IEnumerable links) return null;
+        foreach (object link in links) return link.GetType().GetField("ammo")?.GetValue(link) as ThingDef;
+        return null;
+    }
+
+    private static object MagCount(ThingComp comp) => comp.GetType().GetProperty("CurMagCount")?.GetValue(comp);
+
+    /// <summary>С CE: оружие есть и из него можно выстрелить (магазин или патроны; при выключенной системе патронов — всегда да).</summary>
+    private static bool IsCEArmedWithAmmo(Pawn r)
+    {
+        ThingComp comp = r.equipment?.Primary?.AllComps.FirstOrDefault(c => c.GetType().Name == "CompAmmoUser");
+        if (comp == null) return false;
+        return comp.GetType().GetProperty("HasAndUsesAmmoOrMagazine")?.GetValue(comp) is bool ok && ok;
     }
 
     private void EndLiveFire()
@@ -170,13 +307,66 @@ public class SelfTestComponent : GameComponent
         }
         foreach (string e in Events) sb.AppendLine("  event: " + e);
         sb.AppendLine($"raiders: {string.Join(", ", raiders.Select(r => r.LabelShort + (r.Dead ? " (dead)" : r.Downed ? " (down)" : "") + " w=" + (r.equipment?.Primary?.def.defName ?? "none")))}");
-        sb.AppendLine($"hostile casts: {HostileShots}, blocked at medic: {BlockedShots}");
+        sb.AppendLine($"hostile casts: {HostileShots}, blocked at medic: {BlockedShots}"
+            + (CEActive ? $", CE projectiles fired: {CEShots}" : ""));
         Check("raiders actually fought", HostileShots > 0, "casts=" + HostileShots);
-        sb.AppendLine($"hits on medic: aimed by respecting {AimedHits}, aimed by non-respecting {AllowedHits}, stray {StrayHits}");
-        Check("no aimed hits on medic", AimedHits == 0, "aimed=" + AimedHits + ", injuries=" + injuries);
+        // Без единого реального снаряда бой с CE не состоялся — «медик не ранен» ничего не доказывает
+        if (CEActive) Check("CE: live fire happened", CEShots > 0, "CE projectiles=" + CEShots);
+        sb.AppendLine($"hits on medic: aimed by respecting {AimedHits}, aimed by non-respecting {AllowedHits}, stray {StrayHits}"
+            + (CEActive ? $"; CE aimed {CEAimedHits}, CE allowed {CEAllowedHits}, CE stray {CEStrayHits}" : ""));
+        Check("no aimed hits on medic", AimedHits + CEAimedHits == 0, "aimed=" + (AimedHits + CEAimedHits) + ", injuries=" + injuries);
         Check("no perfidy during fight", !Events.Any(e => e.StartsWith("perfidy")), "");
     }
 
+    /// <summary>
+    /// CE-режим: у формы заданы Bulk/WornBulk и носимый запас влезает в CarryBulk.
+    /// Проверяется <b>наличие</b> стата в def: у CE <c>Bulk</c> имеет defaultBaseValue=1,
+    /// поэтому проверка значения дала бы ложно-зелёный результат. Без CE статов нет — пункт неприменим.
+    /// </summary>
+    private static void CheckCEBulk(Action<string, bool, string> check, Pawn medic)
+    {
+        StatDef bulk = DefDatabase<StatDef>.GetNamedSilentFail("Bulk");
+        StatDef wornBulk = DefDatabase<StatDef>.GetNamedSilentFail("WornBulk");
+        StatDef carryBulk = DefDatabase<StatDef>.GetNamedSilentFail("CarryBulk");
+        if (bulk == null || wornBulk == null || carryBulk == null) return; // CE не загружен
+
+        string[] kit = { "PM_Apparel_Shirt", "PM_Apparel_Pants", "PM_Apparel_Vest", "PM_Apparel_Jacket",
+            "PM_Apparel_Beret", "PM_Apparel_Helmet", "PM_Apparel_Goggles", "PM_Apparel_Belt" };
+        var noBulk = new List<string>();
+        var noWorn = new List<string>();
+        foreach (string d in kit)
+        {
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(d);
+            if (def == null) continue;
+            if (!def.statBases.Any(m => m.stat == bulk)) noBulk.Add(d);
+            if (!def.statBases.Any(m => m.stat == wornBulk)) noWorn.Add(d);
+        }
+        check("CE: kit apparel has Bulk", noBulk.Count == 0, noBulk.Count == 0 ? kit.Length + " defs" : "missing: " + string.Join(", ", noBulk));
+        check("CE: kit apparel has WornBulk", noWorn.Count == 0, noWorn.Count == 0 ? kit.Length + " defs" : "missing: " + string.Join(", ", noWorn));
+
+        // Носимый запас: до 6 медикаментов (повязки тратят по одному) + шприц — должен укладываться в CarryBulk
+        float need = 6f * ThingDefOf.MedicineIndustrial.GetStatValueAbstract(bulk)
+            + PM_DefOf.PM_AdrenalineSyringe.GetStatValueAbstract(bulk);
+        float cap = medic.GetStatValue(carryBulk);
+        check("CE: 6 medicine + syringe fit CarryBulk", need <= cap, need.ToString("0.##") + " / " + cap.ToString("0.##"));
+    }
+
+    /// <summary>Оценка числа ошибок в Player.log на момент отчёта (скрипт-обвязка считает точнее и с группировкой).</summary>
+    private static int LogErrorCount()
+    {
+        try
+        {
+            string log = Path.Combine(GenFilePaths.SaveDataFolderPath, "Player.log");
+            if (!File.Exists(log)) return -1;
+            int n = 0;
+            foreach (string line in File.ReadAllLines(log))
+            {
+                if (line.StartsWith("Exception") || line.Contains("NullReferenceException") || line.Contains("different thread")) n++;
+            }
+            return n;
+        }
+        catch { return -1; }
+    }
 
     private static Apparel Make(string def)
     {
@@ -230,14 +420,20 @@ public class SelfTestComponent : GameComponent
             && st.statOffsets.Any(m => m.stat == StatDefOf.ShootingAccuracyPawn && m.value < 0f), "");
 
         // ---- 2. Полная выкладка
-        foreach (string d in new[] { "PM_Apparel_Shirt", "PM_Apparel_Pants", "PM_Apparel_Jacket", "PM_Apparel_Goggles", "PM_Apparel_Belt" })
+        string[] kit = { "PM_Apparel_Shirt", "PM_Apparel_Pants", "PM_Apparel_Jacket", "PM_Apparel_Goggles", "PM_Apparel_Belt" };
+        foreach (string d in kit)
         {
             medic.apparel.Wear(Make(d), dropReplacedApparel: false);
         }
+        // форма надевается целиком: ни одна вещь не вытеснена конфликтом слоёв/частей тела
+        int wornPieces = medic.apparel.WornApparel.Count(a => a.TryGetComp<CompParamedicGear>() != null);
+        check("kit worn whole (no slot conflicts)", wornPieces == 7, "pieces=" + wornPieces);
         duty = medic.health.hediffSet.GetFirstHediffOfDef(PM_DefOf.PM_OnDuty);
         check("full kit stage", duty != null && duty.CurStageIndex == 2, "sev=" + duty?.Severity + " worn=" + medic.apparel.WornApparelCount);
         stock = medic.inventoryStock.GetDesiredCountForGroup(InventoryStockGroupDefOf.Medicine);
         check("medicine pocket with rig = 6", stock == 6, "stock=" + stock);
+        check("pocket does not exceed limit", stock <= 6, "stock=" + stock);
+        CheckCEBulk(check, medic);
         check("steady nerves (jacket)", medic.health.hediffSet.HasHediff(PM_DefOf.PM_SteadyNerves), "");
         check("cooldown factor full kit", Mathf.Approximately(RankUtility.CooldownFactor(medic), 0.6f), RankUtility.CooldownFactor(medic).ToString());
 

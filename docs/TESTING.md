@@ -21,6 +21,37 @@ powershell -ExecutionPolicy Bypass -File tools\run_selftest.ps1
 `RimWorldWin64.exe -dutyloadsave=ParamedicSelfTest` (инструмент DutyOptim) → `DutyOptimLoadSave.txt`:
 должно быть «ошибок 0». Последний прогон (2026-10-12): 0 ошибок.
 
+## Прогон с Combat Extended
+```
+powershell -ExecutionPolicy Bypass -File tools\run_selftest_ce.ps1
+```
+Собирает DLL, проверяет XML, разворачивает мод в `...\RimWorld\Mods\Paramedic`, подменяет `ModsConfig.xml`
+набором `tools/modlists/ce.xml` (Harmony → Core/DLC → CE → CE Armory → Paramedic) с бэкапом в
+`C:\RimWorldConfigBackup`, печатает ошибки лога с отфильтрованным шумом CE и **точную команду запуска**.
+Игру запускает менеджер:
+```
+"C:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64.exe" -quicktest -pmselftest
+```
+Отчёт `ParamedicSelfTest.txt` печатает `mode: CE`/`CE+Armory`, число ошибок лога и PASS/FAIL; итоги по
+режимам копятся в `ParamedicSelfTest.modes.txt`. После прогона верни конфиг:
+```
+powershell -ExecutionPolicy Bypass -File tools\run_selftest_ce.ps1 -Restore
+```
+Весь цикл одним запуском (сборка → конфиг → игра → проверка загрузки сейва → возврат конфига в `finally`):
+```
+powershell -ExecutionPolicy Bypass -File tools\run_selftest_ce.ps1 -Run
+```
+`-Run` грузит сейв с CE (`-dutyloadsave`) и печатает вердикт DutyOptim; `-VanillaSave <файл>` проверяет
+«сейв, сделанный без CE, грузится с CE» на копии ванильного сейва. Ещё ключи: `-NoDeploy`, `-NoLoadSave`, `-Force`.
+
+В CE-режиме дополнительно проверяется: у пиратов CE-оружие **и патроны** (иначе не стреляют); в бою реально
+были снаряды (`ProjectileCE`, выстрелов > 0, иначе тест недействителен); форма надевается без конфликта слотов;
+у вещей формы заданы `Bulk`/`WornBulk`; карман не превышает лимит; 6 медикаментов + шприц влезают в `CarryBulk`.
+
+Пока `About/About.xml` содержит `CETeam.CombatExtended` в `<incompatibleWith>`, скрипт отказывается
+готовить CE-прогон: игра загрузит только один из модов, и тест молча проверит не то. Убирает строку трек A.
+Пункты отчёта `CE: kit apparel has Bulk/WornBulk` заведомо FAIL, пока CE-патч формы (трек A) не добавлен.
+
 ## Снимки формы
 `RimWorldWin64.exe -quicktest -pmshot` → `ParamedicShot_Юг/Восток/Север.png` рядом с `Player.log`:
 пять пешек (все типы тел) в форме, три ракурса. Последний результат — [ingame_preview.png](ingame_preview.png).
