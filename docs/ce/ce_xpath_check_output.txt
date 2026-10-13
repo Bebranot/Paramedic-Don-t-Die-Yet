@@ -1,0 +1,3 @@
+Defs: 7 файлов, операций в PM_CE.xml: 19
+  Все xpath находят узел; у всех 8 вещей формы есть Bulk+WornBulk.
+  CE-статы определены: Bulk, WornBulk, CarryBulk

@@ -24,10 +24,9 @@
     <li>Ludeon.RimWorld.Biotech</li>
     <li>Ludeon.RimWorld.Anomaly</li>
     <li>Ludeon.RimWorld.Odyssey</li>
-  </loadAfter>
-  <incompatibleWith>
     <li>CETeam.CombatExtended</li>
-  </incompatibleWith>
+    <li>CETeam.CombatExtendedArmory</li>
+  </loadAfter>
   <description>A field medic role you put on with the uniform.
 
 Wear the paramedic vest together with the beret (or helmet) and your colonist goes ON DUTY: better and faster tending, safer surgery, faster rescues - and an oath. Kill or maim a human with your own hands and it will weigh on them for days.
@@ -47,7 +46,7 @@ AND ALSO
 - The oath: -5 to -20 mood for killing/maiming, weaker with rank; crisis of faith after repeated violations.
 - Mod settings; English and Russian.
 
-Requires Harmony. Not compatible with Combat Extended. Humans only (no alien race support). Safe to add to an existing save.
+Requires Harmony. Supports Combat Extended (optional). Humans only (no alien race support). Safe to add to an existing save.
 
 Полевой медик: роль даётся формой. Русский язык в комплекте.</description>
 </ModMetaData>
