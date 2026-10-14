@@ -54,7 +54,7 @@ Only harm done with your own hands counts: your shot, your punch, your scalpel o
 [list]
 [*]Requires Harmony
 [*]Tested with CAI 5000, the shout works with its AI
-[*]Not compatible with Combat Extended
+[*]Works with Combat Extended and CE Armory (needs no extra patch, just load it after them)
 [*]Humans only, no alien race textures
 [*]Safe to add mid-save. Removing it mid-save is not recommended
 [/list]
@@ -115,7 +115,7 @@ Found a bug? Leave a comment with your Player.log and mod list.
 [list]
 [*]Нужен Harmony
 [*]Проверено с CAI 5000, крик работает с его ИИ
-[*]Несовместим с Combat Extended
+[*]Работает с Combat Extended и CE Armory (отдельный патч не нужен, просто грузите после них)
 [*]Только люди, текстур под чужие расы нет
 [*]Можно добавить в начатую игру. Удалять из идущей игры не советую
 [/list]
@@ -123,4 +123,23 @@ Found a bug? Leave a comment with your Player.log and mod list.
 Языки: английский, русский.
 
 Нашли баг? Пишите в комментарии, приложите Player.log и список модов.
+```
+
+
+## Заметки к обновлению 1.1.0 (поле «Change Note» при загрузке)
+
+```
+1.1.0
+Теперь работает с Combat Extended и CE Armory - просили в комментариях.
+- Мод больше не помечен несовместимым с CE.
+- Форма под CE: добавил вещам вес и объём, броню пересчитал под CE и оставил лёгкой, как была.
+- Крик и клятва проверены с CE-стрельбой.
+- Без CE всё как раньше. Старые сейвы не ломает.
+Если с CE что-то не так - пишите в комментарии с Player.log и списком модов.
+```
+
+Для поста в комментариях (ответ тому, кто просил):
+
+```
+Сделал, обновление уже в мастерской. Грузите после Combat Extended и CE Armory. Если что-то странное - кидайте Player.log.
 ```

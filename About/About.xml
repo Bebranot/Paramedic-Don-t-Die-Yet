@@ -3,7 +3,7 @@
   <name>Paramedic: Don't Die Yet!</name>
   <author>bebranotyep</author>
   <packageId>bebranotyep.paramedic</packageId>
-  <modVersion>1.0.0</modVersion>
+  <modVersion>1.1.0</modVersion>
   <url>https://github.com/Bebranot/Paramedic-Don-t-Die-Yet-</url>
   <supportedVersions>
     <li>1.6</li>
@@ -46,7 +46,7 @@ AND ALSO
 - The oath: -5 to -20 mood for killing/maiming, weaker with rank; crisis of faith after repeated violations.
 - Mod settings; English and Russian.
 
-Requires Harmony. Supports Combat Extended (optional). Humans only (no alien race support). Safe to add to an existing save.
+Requires Harmony. Works with Combat Extended and CE Armory (both optional). Humans only (no alien race support). Safe to add to an existing save.
 
 Полевой медик: роль даётся формой. Русский язык в комплекте.</description>
 </ModMetaData>
