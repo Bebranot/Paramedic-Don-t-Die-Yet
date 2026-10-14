@@ -195,6 +195,8 @@ public class SelfTestComponent : GameComponent
             if (now - startTick < 120) return;
             try
             {
+                // Reset log error tracker at start of test
+                LogErrorTracker.Reset();
                 Run(Check, sb);
                 StartLiveFire();
                 phase = 1;
@@ -229,11 +231,24 @@ public class SelfTestComponent : GameComponent
     {
         phase = 2;
         ParamedicMod.Settings.shoutRespectFactor = 1f;
-        int logErrors = LogErrorCount();
+        int logErrors = LogErrorTracker.TotalErrors;
         sb.Insert(0, $"Paramedic self-test: {(fails == 0 ? "PASS" : fails + " FAIL")}\n" +
             $"mode: {ModeName}\n" +
             $"log errors (approx, so far): {(logErrors < 0 ? "n/a" : logErrors.ToString())}\n" +
             $"mods: {string.Join(", ", ModsConfig.ActiveModsInLoadOrder.Select(m => m.PackageId))}\n\n");
+
+        // Generate Harmony patch report if requested
+        if (GenCommandLine.CommandLineArgPassed("dutypatchreport"))
+        {
+            try
+            {
+                HarmonyReport.GenerateReport();
+            }
+            catch (Exception e)
+            {
+                sb.AppendLine("\nHarmony report generation failed: " + e);
+            }
+        }
         // сейв для проверки загрузки: RimWorldWin64.exe -dutyloadsave=ParamedicSelfTest (инструмент DutyOptim)
         try
         {
@@ -560,6 +575,17 @@ public class SelfTestComponent : GameComponent
         victim2.TakeDamage(new DamageInfo(DamageDefOf.ExecutionCut, 999f, 0f, -1f, medic, victim2.health.hediffSet.GetBrain()));
         check("kill: victim dead", victim2.Dead, "");
         check("kill: oath broken (stage 0)", OathStage(medic, PM_DefOf.PM_OathBroken) == 0, "stage=" + OathStage(medic, PM_DefOf.PM_OathBroken));
+
+        // CE: additional test with real Bullet damage (no armor, head shot) to cover CE damage path
+        if (CEActive)
+        {
+            Pawn victim2CE = SpawnPawn(PawnKindDefOf.Drifter, pirates, medic.Position, map);
+            // Strip armor to ensure Bullet kills through CE damage system
+            victim2CE.apparel.DestroyAll();
+            victim2CE.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 999f, 0f, -1f, medic, victim2CE.health.hediffSet.GetBrain()));
+            check("kill (CE Bullet): victim dead", victim2CE.Dead, "");
+            check("kill (CE Bullet): oath broken (stage 0)", OathStage(medic, PM_DefOf.PM_OathBroken) == 0, "stage=" + OathStage(medic, PM_DefOf.PM_OathBroken));
+        }
 
         // Не человек — не нарушение
         Pawn animal = map.mapPawns.AllPawnsSpawned.FirstOrDefault(p => p.RaceProps.Animal);

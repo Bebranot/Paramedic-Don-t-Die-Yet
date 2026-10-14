@@ -1,14 +1,15 @@
 # CE self-test runner: prepares a Combat Extended run of the in-game self-test.
-#   powershell -ExecutionPolicy Bypass -File tools\run_selftest_ce.ps1 [-Run] [-Restore] [-NoDeploy] [-NoLoadSave] [-VanillaSave <file>] [-Force]
+#   powershell -ExecutionPolicy Bypass -File tools\run_selftest_ce.ps1 [-Run] [-Restore] [-NoDeploy] [-NoLoadSave] [-VanillaSave <file>] [-Force] [-CEOnly]
 # (ASCII only: Windows PowerShell 5.1 reads BOM-less UTF-8 as ANSI. Cyrillic literals are
 #  avoided; where the game writes Russian text it is matched with a \uXXXX regex.)
 #
 # Default (no -Run): build, validate XML, deploy the mod into the game's Mods folder,
-#   swap ModsConfig.xml to tools\modlists\ce.xml (backup in C:\RimWorldConfigBackup) and
+#   swap ModsConfig.xml to tools\modlists\ce.xml (or ce_only.xml with -CEOnly) (backup in C:\RimWorldConfigBackup) and
 #   print the exact launch command. The game is launched by the manager, not by this script.
 # -Run: also launch the game, wait for the report, print mode/result/log errors and the
 #   save-load check, then ALWAYS restore the original ModsConfig.xml in finally.
 # -Restore: put the original ModsConfig.xml back (also done automatically by -Run).
+# -CEOnly: use tools\modlists\ce_only.xml (CE without Armory) instead of ce.xml.
 #
 # Rule: the original ModsConfig.xml is never lost - it is copied to
 #   C:\RimWorldConfigBackup\ModsConfig.original.xml before the swap and restored from there.
@@ -18,7 +19,8 @@ param(
     [switch]$NoDeploy,
     [switch]$NoLoadSave,
     [string]$VanillaSave = "",
-    [switch]$Force
+    [switch]$Force,
+    [switch]$CEOnly
 )
 
 $ErrorActionPreference = "Continue"
@@ -35,6 +37,7 @@ $backupDir  = "C:\RimWorldConfigBackup"
 $origBak    = Join-Path $backupDir "ModsConfig.original.xml"
 $stateFile  = Join-Path $backupDir "ModsConfig.state.txt"
 $modlist    = Join-Path $PSScriptRoot "modlists\ce.xml"
+if ($CEOnly) { $modlist = Join-Path $PSScriptRoot "modlists\ce_only.xml" }
 
 function Fail([string]$msg) { Write-Output $msg; exit 1 }
 

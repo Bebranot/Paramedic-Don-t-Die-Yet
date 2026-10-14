@@ -14,24 +14,34 @@ namespace Paramedic;
 /// </summary>
 public static class CompatCE
 {
-    // Lazy check: ModsConfig might not be fully populated when ParamedicMod constructor runs.
-    // Active is evaluated on first access (at runtime), not at mod load time.
+    // Lazy cached check: ModsConfig might not be fully populated when ParamedicMod constructor runs.
+    // Active is evaluated once on first access (after mods loaded), then cached.
+    private static bool? _activeCache;
     public static bool Active
     {
         get
         {
+            if (_activeCache.HasValue) return _activeCache.Value;
+            
             // Check both by name and by assembly presence (more reliable at runtime)
-            if (ModsConfig.IsActive("CETeam.CombatExtended") || ModsConfig.IsActive("ceteam.combatextended") || ModsConfig.IsActive("Combat Extended")) return true;
-            // Check if assembly is loaded
-            try
+            bool active = ModsConfig.IsActive("CETeam.CombatExtended") 
+                       || ModsConfig.IsActive("ceteam.combatextended") 
+                       || ModsConfig.IsActive("Combat Extended");
+            
+            if (!active)
             {
-                foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
+                try
                 {
-                    if (a.GetName().Name == "CombatExtended") return true;
+                    foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        if (a.GetName().Name == "CombatExtended") { active = true; break; }
+                    }
                 }
+                catch { }
             }
-            catch { }
-            return false;
+            
+            _activeCache = active;
+            return active;
         }
     }
 
@@ -43,7 +53,7 @@ public static class CompatCE
     private static Type ceWeaponInfo;
     private static PropertyInfo isSuppressedProp;
     private static FieldInfo launcherField;
-    private static FieldInfo instigatorField;
+    private static FieldInfo intendedTargetField;
     private static MethodInfo getCEProjectileInfo;
     private static bool initialized;
 
@@ -79,12 +89,12 @@ public static class CompatCE
                 isSuppressedProp = AccessTools.Property(compSuppressable, "IsSuppressed");
             }
 
-            // Projectile CE: launcher/instigator fields for damage attribution
+            // Projectile CE: launcher/intendedTarget fields for damage attribution
             Type projectileCE = ceAsm.GetType("CombatExtended.ProjectileCE");
             if (projectileCE != null)
             {
                 launcherField = AccessTools.Field(projectileCE, "launcher");
-                instigatorField = AccessTools.Field(projectileCE, "instigator");
+                intendedTargetField = AccessTools.Field(projectileCE, "intendedTarget");
             }
 
             // Helper: get CE ammo/weapon info from ThingDef
@@ -93,7 +103,7 @@ public static class CompatCE
             Log.Message("[Paramedic] Combat Extended detected: Verb_ShootCE=" + (verbShootCE != null)
                 + " Verb_LaunchProjectileCE=" + (verbLaunchProjectileCE != null)
                 + " CompSuppressable=" + (compSuppressable != null)
-                + " ProjectileCE launcher/instigator=" + (launcherField != null && instigatorField != null));
+                + " ProjectileCE launcher/intendedTarget=" + (launcherField != null && intendedTargetField != null));
         }
         catch (Exception e)
         {
@@ -132,17 +142,6 @@ public static class CompatCE
         }
     }
 
-    /// <summary>Получить instigator (виновника) у CE-снаряда/урона. Возвращает null, если не CE или поле недоступно.</summary>
-    public static Pawn GetCEInstigator(Thing projectileOrDamageSource)
-    {
-        if (projectileOrDamageSource == null || instigatorField == null) return null;
-        try
-        {
-            return instigatorField.GetValue(projectileOrDamageSource) as Pawn;
-        }
-        catch { return null; }
-    }
-
     /// <summary>Получить launcher (пусковую установку/оружие) у CE-снаряда. Для определения владельца выстрела.</summary>
     public static Pawn GetCELauncher(Thing projectile)
     {
@@ -152,6 +151,25 @@ public static class CompatCE
             return launcherField.GetValue(projectile) as Pawn;
         }
         catch { return null; }
+    }
+
+    /// <summary>Получить intendedTarget (целевую цель) у CE-снаряда.</summary>
+    public static LocalTargetInfo GetCEIntendedTarget(Thing projectile)
+    {
+        if (projectile == null || intendedTargetField == null) return LocalTargetInfo.Invalid;
+        try
+        {
+            return (LocalTargetInfo)intendedTargetField.GetValue(projectile);
+        }
+        catch { return LocalTargetInfo.Invalid; }
+    }
+
+    /// <summary>Получить instigator (виновника) у CE-снаряда/урона. 
+    /// В CE instigator = launcher (если это Pawn). Возвращает null, если не CE или поле недоступно.</summary>
+    public static Pawn GetCEInstigator(Thing projectileOrDamageSource)
+    {
+        // В CE виновник выстрела — это launcher (Pawn, который выстрелил)
+        return GetCELauncher(projectileOrDamageSource);
     }
 
     /// <summary>Проверка: есть ли у вещи CE-инфо об оружии/амуниции.</summary>

@@ -7,11 +7,11 @@
 
 - 8 вещей формы на всех слоях, 3 исследования, шприц адреналина
 - 3 способности, клятва и кризис веры, звания, выгорание, гуманитарная помощь
-- EN + RU, настройки мода; требует Harmony; несовместим с Combat Extended
+- EN + RU, настройки мода; требует Harmony; **совместим с Combat Extended (CE) и CE Armory**
 
 ## Документы
 - [docs/DESIGN.md](docs/DESIGN.md) — механики и числа (как реализовано)
-- [docs/COMPAT.md](docs/COMPAT.md) — патчи и проверенная совместимость (DutyOptim, CAI 5000)
+- [docs/COMPAT.md](docs/COMPAT.md) — патчи и проверенная совместимость (DutyOptim, CAI 5000, CE, CE Armory)
 - [docs/TESTING.md](docs/TESTING.md) — автотест в игре, проверка сейва, снимки, генерация текстур
 - [docs/RELEASE.md](docs/RELEASE.md) — чек-лист выпуска и загрузка в Steam
 - [docs/QUESTIONS.md](docs/QUESTIONS.md) — решения и открытые вопросы

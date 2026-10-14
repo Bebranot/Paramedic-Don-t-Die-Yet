@@ -14,6 +14,7 @@ public class ParamedicMod : Mod
         var harmony = new Harmony("bebranotyep.paramedic");
         PatchAllSafe(harmony);
         CompatCE.Init();
+        LogErrorTracker.Init();
     }
 
     /// <summary>Каждый патч отдельно: сбой одного (например, после обновления игры) не отключает остальные.</summary>

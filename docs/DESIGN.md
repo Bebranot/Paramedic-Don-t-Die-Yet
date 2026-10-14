@@ -100,4 +100,5 @@
 
 ## 7. Совместимость
 
-Только люди (HAR — нет), без Combat Extended (incompatibleWith). Проверено с DutyOptim и CAI 5000 — см. [COMPAT.md](COMPAT.md).
+Только люди (HAR — нет). **Полная совместимость с Combat Extended (CE) и CE Armory** — см. [COMPAT.md](COMPAT.md).
+Проверено с DutyOptim и CAI 5000.

@@ -23,7 +23,8 @@ public static class LogErrorTracker
 
     public static void Init()
     {
-        if (_initialized) return;
+        // только для автотеста: у обычных игроков хука на лог быть не должно
+        if (_initialized || !SelfTestComponent.Enabled) return;
         _initialized = true;
         
         Application.logMessageReceived += OnLogMessageReceived;
