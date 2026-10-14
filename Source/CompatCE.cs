@@ -21,7 +21,7 @@ public static class CompatCE
         get
         {
             // Check both by name and by assembly presence (more reliable at runtime)
-            if (ModsConfig.IsActive("CETeam.CombatExtended") || ModsConfig.IsActive("Combat Extended")) return true;
+            if (ModsConfig.IsActive("CETeam.CombatExtended") || ModsConfig.IsActive("ceteam.combatextended") || ModsConfig.IsActive("Combat Extended")) return true;
             // Check if assembly is loaded
             try
             {

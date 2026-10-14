@@ -3,15 +3,13 @@
 
   <!--
     Совместимость с Combat Extended (CE).
-    Всё — внутри PatchOperationFindMod("CETeam.CombatExtended"): без CE файл не делает ничего.
-    Используем packageId (CETeam.CombatExtended), а не display name (Combat Extended),
-    так как PatchOperationFindMod проверяет packageId.
+    Всё — внутри PatchOperationConditional: проверяем наличие стата Bulk (только в CE).
+    Это надёжнее PatchOperationFindMod, так как packageId в runtime может быть в любом регистре.
+    Поле для теста называется "xpath", а не "test".
   -->
-  <Operation Class="PatchOperationFindMod">
-    <mods>
-      <li>CETeam.CombatExtended</li>
-      <li>Combat Extended</li>
-    </mods>
+  <Operation Class="PatchOperationConditional">
+    <!-- Test: есть ли StatDef с defName="Bulk" (только в CE) -->
+    <xpath>Defs/StatDef[defName="Bulk"]</xpath>
     <match Class="PatchOperationSequence">
       <operations>
 

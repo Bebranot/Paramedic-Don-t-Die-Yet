@@ -125,7 +125,18 @@ public class SelfTestComponent : GameComponent
     {
         get
         {
-            if (ModsConfig.IsActive("CETeam.CombatExtended") || ModsConfig.IsActive("Combat Extended")) return true;
+            // Check ModsConfig first (case-insensitive fallback via ActiveModsInLoadOrder)
+            if (ModsConfig.IsActive("CETeam.CombatExtended") || ModsConfig.IsActive("ceteam.combatextended") || ModsConfig.IsActive("Combat Extended")) return true;
+            try
+            {
+                foreach (var m in ModsConfig.ActiveModsInLoadOrder)
+                {
+                    string pid = m.PackageId?.ToLowerInvariant();
+                    if (pid == "ceteam.combatextended") return true;
+                }
+            }
+            catch { }
+            // Check if assembly is loaded
             try
             {
                 foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
@@ -138,10 +149,35 @@ public class SelfTestComponent : GameComponent
         }
     }
 
-    public static bool CEArmoryActive => ModsConfig.IsActive("CETeam.CombatExtendedArmory") || ModsConfig.IsActive("Combat Extended Armory");
+    public static bool CEArmoryActive
+    {
+        get
+        {
+            if (ModsConfig.IsActive("CETeam.CombatExtendedArmory") || ModsConfig.IsActive("ceteam.combatextendedarmory") || ModsConfig.IsActive("Combat Extended Armory")) return true;
+            try
+            {
+                foreach (var m in ModsConfig.ActiveModsInLoadOrder)
+                {
+                    string pid = m.PackageId?.ToLowerInvariant();
+                    if (pid == "ceteam.combatextendedarmory") return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+    }
 
     /// <summary>Режим прогона для отчёта: vanilla / CE / CE+Armory.</summary>
-    public static string ModeName => (ModsConfig.IsActive("CETeam.CombatExtended") || ModsConfig.IsActive("Combat Extended")) ? ((ModsConfig.IsActive("CETeam.CombatExtendedArmory") || ModsConfig.IsActive("Combat Extended Armory")) ? "CE+Armory" : "CE") : "vanilla";
+    public static string ModeName
+    {
+        get
+        {
+            bool ce = CEActive; // reuse logic
+            if (!ce) return "vanilla";
+            bool armory = CEArmoryActive;
+            return armory ? "CE+Armory" : "CE";
+        }
+    }
 
     private void Check(string name, bool ok, string extra = "")
     {
@@ -520,7 +556,8 @@ public class SelfTestComponent : GameComponent
         check("maim: oath broken (stage 1)", OathStage(medic, PM_DefOf.PM_OathBroken) == 1, "stage=" + OathStage(medic, PM_DefOf.PM_OathBroken));
 
         Pawn victim2 = SpawnPawn(PawnKindDefOf.Drifter, pirates, medic.Position, map);
-        victim2.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 999f, 0f, -1f, medic, victim2.health.hediffSet.GetBrain()));
+        // CE: Bullet damage may be mitigated by armor/CE damage system; use ExecutionCut for reliable instant kill
+        victim2.TakeDamage(new DamageInfo(DamageDefOf.ExecutionCut, 999f, 0f, -1f, medic, victim2.health.hediffSet.GetBrain()));
         check("kill: victim dead", victim2.Dead, "");
         check("kill: oath broken (stage 0)", OathStage(medic, PM_DefOf.PM_OathBroken) == 0, "stage=" + OathStage(medic, PM_DefOf.PM_OathBroken));
 
@@ -529,13 +566,13 @@ public class SelfTestComponent : GameComponent
         if (animal != null)
         {
             int before = GameComponent_Paramedic.Instance.Get(medic).violationTicks.Count;
-            animal.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 999f, 0f, -1f, medic, animal.health.hediffSet.GetBrain()));
+            animal.TakeDamage(new DamageInfo(DamageDefOf.ExecutionCut, 999f, 0f, -1f, medic, animal.health.hediffSet.GetBrain()));
             check("animal kill: no violation", GameComponent_Paramedic.Instance.Get(medic).violationTicks.Count == before, "");
         }
 
         // ---- 8. Кризис веры: третье нарушение
         Pawn victim3 = SpawnPawn(PawnKindDefOf.Drifter, pirates, medic.Position, map);
-        victim3.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 999f, 0f, -1f, medic, victim3.health.hediffSet.GetBrain()));
+        victim3.TakeDamage(new DamageInfo(DamageDefOf.ExecutionCut, 999f, 0f, -1f, medic, victim3.health.hediffSet.GetBrain()));
         check("crisis hediff", medic.health.hediffSet.HasHediff(PM_DefOf.PM_CrisisOfFaith), "violations=" + GameComponent_Paramedic.Instance.Get(medic).violationTicks.Count);
         check("crisis: off duty", !ParamedicUtility.IsOnDuty(medic), "");
         check("crisis: abilities removed", medic.abilities.GetAbility(PM_DefOf.PM_DontShoot) == null, "");
