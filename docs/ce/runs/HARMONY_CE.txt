@@ -1,0 +1,46 @@
+=== Paramedic Harmony Patch Report ===
+Generated: 2026-10-14 14:25:49
+Mod: bebranotyep.paramedic
+
+=== Verse.Pawn.ThreatDisabled ===
+  Prefixes (0):
+  Postfixes (1):
+    Owner: bebranotyep.paramedic, Priority: 400, Before: System.String[], After: System.String[]
+  Transpilers (0):
+
+=== Verse.Verb.TryStartCastOn ===
+  Prefixes (1):
+    Owner: bebranotyep.paramedic, Priority: -100, Before: System.String[], After: System.String[]
+  Postfixes (0):
+  Transpilers (0):
+
+=== Verse.Thing.TakeDamage ===
+  Prefixes (1):
+    Owner: bebranotyep.paramedic, Priority: 400, Before: System.String[], After: System.String[]
+  Postfixes (1):
+    Owner: bebranotyep.paramedic, Priority: 400, Before: System.String[], After: System.String[]
+  Transpilers (0):
+
+=== Verse.Pawn.Kill ===
+  Prefixes (1):
+    Owner: bebranotyep.paramedic, Priority: 400, Before: System.String[], After: System.String[]
+  Postfixes (1):
+    Owner: bebranotyep.paramedic, Priority: 400, Before: System.String[], After: System.String[]
+  Transpilers (0):
+
+=== All Paramedic Patches (reflection) ===
+  Pawn_Kill_Patch:
+  Thing_TakeDamage_Patch:
+  Recipe_RemoveBodyPart_ApplyThoughts_Patch:
+  WorkGiver_Warden_DoExecution_Patch:
+  Bill_Medical_PawnAllowed_Patch:
+  Pawn_ThreatDisabled_Patch:
+  Verb_TryStartCastOn_Patch:
+  EquipmentUtility_CanEquip_Patch:
+  TendPatches:
+  Pawn_ExitMap_Patch:
+  RescueOption_Triage_Patch:
+  Ability_StartCooldown_Patch:
+  SelfTest_BulletImpact_Patch:
+  SelfTest_CEProjectileImpact_Patch:
+  SelfTest_CEShot_Patch:
