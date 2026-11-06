@@ -1,34 +1,49 @@
 <Project>
-  <!-- Общие настройки сборки. Путь к игре можно переопределить: dotnet build -p:RimWorldDir=... -->
+  <!-- Общие настройки сборки. Пути можно переопределить: dotnet build -p:RimWorldDir=... -->
   <PropertyGroup>
     <RimWorldDir Condition="'$(RimWorldDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\RimWorld</RimWorldDir>
-    <HarmonyDir Condition="'$(HarmonyDir)' == ''">C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2009463077\Current\Assemblies</HarmonyDir>
-    <Managed>$(RimWorldDir)\RimWorldWin64_Data\Managed</Managed>
+    <HarmonyMod Condition="'$(HarmonyMod)' == ''">C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2009463077</HarmonyMod>
+    <!-- Сборки 1.6 в установленной игре больше нет, поэтому они лежат локально. Каталог не в git. -->
+    <Refs16 Condition="'$(Refs16)' == ''">$(MSBuildThisFileDirectory)..\References\1.6</Refs16>
 
-    <TargetFramework>net472</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <OutputPath>$(MSBuildThisFileDirectory)..\Assemblies\</OutputPath>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!-- RimWorld 1.6: .NET Framework 4.7.2, Unity -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net472'">
+    <OutputPath>$(MSBuildThisFileDirectory)..\1.6\Assemblies\</OutputPath>
+    <DefineConstants>$(DefineConstants);RIMWORLD_1_6</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Игра и Harmony уже загружены в процесс: копировать их в Assemblies/ нельзя -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="Assembly-CSharp"><HintPath>$(Refs16)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(Refs16)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(Refs16)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(Refs16)\UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(Refs16)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(Refs16)\0Harmony.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
-  <!-- Игра и Harmony уже загружены в процесс — копировать их в Assemblies/ нельзя -->
-  <ItemGroup>
-    <Reference Include="Assembly-CSharp"><HintPath>$(Managed)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine"><HintPath>$(Managed)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.CoreModule"><HintPath>$(Managed)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(Managed)\UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.ScreenCaptureModule"><HintPath>$(Managed)\UnityEngine.ScreenCaptureModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(Managed)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="0Harmony"><HintPath>$(HarmonyDir)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+  <!-- RimWorld 1.7: .NET 10, движок Waylith -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <OutputPath>$(MSBuildThisFileDirectory)..\1.7\Assemblies\</OutputPath>
+    <DefineConstants>$(DefineConstants);RIMWORLD_1_7</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <Reference Include="Assembly-CSharp"><HintPath>$(RimWorldDir)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityStubs"><HintPath>$(RimWorldDir)\UnityStubs.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Waylith"><HintPath>$(RimWorldDir)\Waylith.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Waylith.UnityCompat"><HintPath>$(RimWorldDir)\Waylith.UnityCompat.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(HarmonyMod)\1.7\Assemblies\0Harmony.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 </Project>

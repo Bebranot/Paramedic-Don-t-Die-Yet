@@ -3,10 +3,11 @@
   <name>Paramedic: Don't Die Yet!</name>
   <author>bebranotyep</author>
   <packageId>bebranotyep.paramedic</packageId>
-  <modVersion>1.1.0</modVersion>
+  <modVersion>1.2.0</modVersion>
   <url>https://github.com/Bebranot/Paramedic-Don-t-Die-Yet-</url>
   <supportedVersions>
     <li>1.6</li>
+    <li>1.7</li>
   </supportedVersions>
   <modDependencies>
     <li>

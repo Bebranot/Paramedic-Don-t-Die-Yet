@@ -18,7 +18,7 @@ powershell -ExecutionPolicy Bypass -File tools\run_selftest.ps1
 В конце пишется сейв `ParamedicSelfTest`.
 
 ## Проверка сейва
-`RimWorldWin64.exe -dutyloadsave=ParamedicSelfTest` (инструмент DutyOptim) → `DutyOptimLoadSave.txt`:
+`RimWorld.exe -dutyloadsave=ParamedicSelfTest` (инструмент DutyOptim) → `DutyOptimLoadSave.txt`:
 должно быть «ошибок 0». Последний прогон (2026-10-12): 0 ошибок.
 
 ## Прогон с Combat Extended
@@ -53,7 +53,7 @@ powershell -ExecutionPolicy Bypass -File tools\run_selftest_ce.ps1 -Run
 Пункты отчёта `CE: kit apparel has Bulk/WornBulk` заведомо FAIL, пока CE-патч формы (трек A) не добавлен.
 
 ## Снимки формы
-`RimWorldWin64.exe -quicktest -pmshot` → `ParamedicShot_Юг/Восток/Север.png` рядом с `Player.log`:
+`RimWorld.exe -quicktest -pmshot` → `ParamedicShot_Юг/Восток/Север.png` рядом с `Player.log`:
 пять пешек (все типы тел) в форме, три ракурса. Последний результат — [ingame_preview.png](ingame_preview.png).
 
 ## Текстуры

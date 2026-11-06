@@ -47,7 +47,9 @@ public class ShotTestComponent : GameComponent
             else
             {
                 string path = Path.Combine(GenFilePaths.SaveDataFolderPath, $"ParamedicShot_{Rots[shot].ToStringHuman()}.png");
-                ScreenCapture.CaptureScreenshot(path);
+                // Через рефлексию: сборка 1.6 не ссылается на UnityEngine.ScreenCaptureModule.
+                HarmonyLib.AccessTools.Method(HarmonyLib.AccessTools.TypeByName("UnityEngine.ScreenCapture"), "CaptureScreenshot", new[] { typeof(string) })
+                    ?.Invoke(null, new object[] { path });
             }
             step++;
             return;

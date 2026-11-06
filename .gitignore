@@ -4,5 +4,6 @@ obj/
 .vs/
 Source/**/bin/
 Source/**/obj/
-Assemblies/*.pdb
+*/Assemblies/*.pdb
+References/
 tools/_vanilla/

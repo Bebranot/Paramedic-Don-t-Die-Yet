@@ -26,7 +26,7 @@ param(
 $ErrorActionPreference = "Continue"
 
 $root       = Split-Path $PSScriptRoot -Parent
-$game       = "C:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64.exe"
+$game       = "C:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorld.exe"
 $gameMods   = "C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\Paramedic"
 $steamMods  = "C:\Program Files (x86)\Steam\steamapps\workshop\content\294100"
 $data       = Join-Path $env:USERPROFILE "AppData\LocalLow\Ludeon Studios\RimWorld by Ludeon Studios"
@@ -40,26 +40,6 @@ $modlist    = Join-Path $PSScriptRoot "modlists\ce.xml"
 if ($CEOnly) { $modlist = Join-Path $PSScriptRoot "modlists\ce_only.xml" }
 
 function Fail([string]$msg) { Write-Output $msg; exit 1 }
-
-# Directory.Build.props expects <Harmony>\Current\Assemblies, but the Harmony mod now ships
-# versioned folders (1.4..1.7). Resolve the folder for the game version and export HarmonyDir,
-# which MSBuild picks up as a property (the child make_release.ps1 inherits it too).
-function Resolve-HarmonyDir {
-    $base = Join-Path $steamMods "2009463077"
-    if (Test-Path -LiteralPath (Join-Path $base "Current\Assemblies\0Harmony.dll")) { return (Join-Path $base "Current\Assemblies") }
-    $ver = ""
-    if (Test-Path -LiteralPath $config) {
-        [xml]$mc = Get-Content -LiteralPath $config -Encoding UTF8
-        if ($mc.ModsConfigData.version -match "^(\d+\.\d+)") { $ver = $Matches[1] }
-    }
-    $candidates = @()
-    if ($ver -ne "") { $candidates += (Join-Path $base ($ver + "\Assemblies")) }
-    foreach ($d in (Get-ChildItem -LiteralPath $base -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending)) {
-        $candidates += (Join-Path $d.FullName "Assemblies")
-    }
-    foreach ($c in $candidates) { if (Test-Path -LiteralPath (Join-Path $c "0Harmony.dll")) { return $c } }
-    return ""
-}
 
 function Restore-Original {
     if (Test-Path -LiteralPath $origBak) {
@@ -168,7 +148,7 @@ function Test-LoadSave([string]$saveName) {
 
 # ---------------------------------------------------------------- entry point
 
-if (Get-Process RimWorldWin64 -ErrorAction SilentlyContinue) { Write-Output "Game is running - close it first."; exit 1 }
+if (Get-Process RimWorld -ErrorAction SilentlyContinue) { Write-Output "Game is running - close it first."; exit 1 }
 
 if ($Restore) { Restore-Original; exit 0 }
 
@@ -183,9 +163,6 @@ if (($about -match "(?s)<incompatibleWith>.*?CETeam\.CombatExtended.*?</incompat
 }
 
 Write-Output "== build"
-$harmonyDir = Resolve-HarmonyDir
-if ($harmonyDir -eq "") { Write-Output "WARNING: 0Harmony.dll not found - build may fail; pass -p:HarmonyDir=... manually" }
-else { $env:HarmonyDir = $harmonyDir; Write-Output ("HarmonyDir: " + $harmonyDir) }
 $build = dotnet build (Join-Path $root "Source\Paramedic.csproj") -c Release -nologo -v q 2>&1 | Out-String
 $errs = $build -split "`n" | Where-Object { $_ -match " error " }
 if ($errs) { $errs | Select-Object -First 10; exit 1 }
@@ -199,7 +176,9 @@ else { Write-Output "WARNING: Combat Extended workshop folder 2890901044 not fou
 if (Test-Path -LiteralPath (Join-Path $steamMods "2911110083")) { Write-Output "CE Armory: found workshop 2911110083" }
 else { Write-Output "WARNING: CE Armory workshop folder 2911110083 not found" }
 
-if (-not $NoDeploy) {
+$gameModsIsLink = (Test-Path -LiteralPath $gameMods) -and ((Get-Item -LiteralPath $gameMods -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)
+if ($gameModsIsLink) { Write-Output "deploy skipped: Mods\Paramedic is a link to the repo" }
+if (-not $NoDeploy -and -not $gameModsIsLink) {
     Write-Output "== deploy mod"
     if (-not (Test-Path -LiteralPath (Split-Path $gameMods -Parent))) { Fail ("game Mods folder not found: " + (Split-Path $gameMods -Parent)) }
     & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root "tools\make_release.ps1") -Out $gameMods

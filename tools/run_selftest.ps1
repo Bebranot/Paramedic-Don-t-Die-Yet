@@ -3,11 +3,11 @@
 # (ASCII only: Windows PowerShell 5.1 reads BOM-less UTF-8 as ANSI.)
 $ErrorActionPreference = "Continue"
 $root = Split-Path $PSScriptRoot -Parent
-$game = "C:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64.exe"
+$game = "C:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorld.exe"
 $data = Join-Path $env:USERPROFILE "AppData\LocalLow\Ludeon Studios\RimWorld by Ludeon Studios"
 $report = Join-Path $data "ParamedicSelfTest.txt"
 
-if (Get-Process RimWorldWin64 -ErrorAction SilentlyContinue) { Write-Output "Game is running - close it first."; exit 1 }
+if (Get-Process RimWorld -ErrorAction SilentlyContinue) { Write-Output "Game is running - close it first."; exit 1 }
 
 $build = dotnet build (Join-Path $root "Source\Paramedic.csproj") -c Release -nologo -v q 2>&1 | Out-String
 $errs = $build -split "`n" | Where-Object { $_ -match " error " }
